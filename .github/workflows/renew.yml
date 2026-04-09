@@ -15,36 +15,39 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: 🛠️ 下载 GOST（供 Python 按需启动多节点）
+      - name: 🛠️ 下载并启动 Xray (手搓 SOCKS5 代理)
+        env:
+          XRAY_CONFIG: ${{ secrets.XRAY_CONFIG }}
         run: |
-          VERSION=$(curl -s https://api.github.com/repos/ginuerzh/gost/releases/latest \
-            | grep '"tag_name"' | cut -d'"' -f4 | tr -d 'v')
-          echo "📦 GOST 版本: $VERSION"
-          wget -q "https://github.com/ginuerzh/gost/releases/download/v${VERSION}/gost_${VERSION}_linux_amd64.tar.gz"
-          tar -xzf "gost_${VERSION}_linux_amd64.tar.gz"
-          chmod +x gost
-          echo "✅ GOST 下载完成"
+          echo "📥 下载最新版 Xray 内核..."
+          wget -q https://github.com/XTLS/Xray-core/releases/download/v1.8.24/Xray-linux-64.zip
+          unzip -q Xray-linux-64.zip -d xray_core
+          
+          echo "📝 生成配置文件..."
+          echo "$XRAY_CONFIG" > xray_core/config.json
+          
+          echo "🚀 后台启动 Xray..."
+          cd xray_core
+          chmod +x xray
+          ./xray run -c config.json &
+          
+          echo "⏳ 等待内核连通..."
+          sleep 5
 
       - name: 🛠️ 安装系统依赖
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            google-chrome-stable \
-            xvfb \
-            x11-utils \
-            xdotool \
-            scrot
+          sudo apt-get install -y google-chrome-stable xvfb x11-utils xdotool scrot
 
       - name: 🐍 安装 Python 依赖
         run: |
           pip install seleniumbase requests
           seleniumbase install chromedriver
 
-      - name: 🚀 运行脚本
+      - name: 🚀 运行续期脚本
         env:
           PYTHONIOENCODING: utf-8
           FGH_ACCOUNT: ${{ secrets.FGH_ACCOUNT }}
-          GOST_PROXY: ${{ secrets.GOST_PROXY }}
           TG_BOT: ${{ secrets.TG_BOT }}
         run: |
           xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" python renew.py
