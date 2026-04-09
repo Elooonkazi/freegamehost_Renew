@@ -35,7 +35,7 @@ def process_account(account):
     print("🌐 启动浏览器 (GitHub 直连模式)...")
 
     # 注意这里去掉了 proxy 参数
-    with SB(uc=True, headless=False) as sb:
+    with SB(uc=True, headless=False, proxy="socks5://127.0.0.1:10808") as sb:
         try:
             sb.driver.set_window_size(1920, 1080)
             
