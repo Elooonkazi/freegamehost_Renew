@@ -26,13 +26,18 @@ jobs:
           echo "📝 生成配置文件..."
           echo "$XRAY_CONFIG" > xray_core/config.json
           
-          echo "🚀 后台启动 Xray..."
           cd xray_core
           chmod +x xray
-          ./xray run -c config.json &
           
-          echo "⏳ 等待内核连通..."
+          echo "🔍 测试配置文件格式..."
+          ./xray test -c config.json
+          
+          echo "🚀 后台启动 Xray..."
+          nohup ./xray run -c config.json > xray.log 2>&1 &
+          
+          echo "⏳ 等待内核启动..."
           sleep 5
+          cat xray.log
 
       - name: 🛠️ 安装系统依赖
         run: |
