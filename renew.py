@@ -65,7 +65,7 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """听从指挥：滑到中间，点续期，然后死磕白色验证框！"""
+    """听从指挥：滑到中间，点续期，然后处决 CF 验证码！"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
@@ -78,8 +78,7 @@ def execute_renewal(sb, email):
         send_tg_photo(f"⏳ FGH 服务器 41ed8b6e 续期冷却中。", cd_img)
         return True 
 
-    print("听你的：正在往下滑动一点点...")
-    
+    print("往下滚动并点击续期按钮...")
     sb.execute_script("""
         var btns = document.querySelectorAll('button, div[class*="btn"], div[class*="rounded"]');
         for (var i = 0; i < btns.length; i++) {
@@ -91,40 +90,49 @@ def execute_renewal(sb, email):
         }
     """)
     sb.sleep(3)
-    print("✅ 成功滑到中间并点击了续期按钮！")
+    print("✅ 成功点击续期按钮！")
 
-    # ================= 🚨 最终 Boss 战：暴力点击白色验证框 🚨 =================
-    print("死盯 CF 验证码，等待其加载 (最多 15 秒)...")
+    # ================= 🚨 终极核弹：专杀 CF Turnstile 🚨 =================
+    print("死盯 CF 验证码加载 (最多 15 秒)...")
+    # 🌟 致命修复：精确制导！只找名字里带 cloudflare 或 turnstile 的框！
+    CF_SELECTOR = 'iframe[src*="cloudflare"], iframe[src*="turnstile"]'
+    
     try:
-        # 🌟 核心修复：不挑食了！只要页面上有 iframe 弹出来，立刻抓住！
-        sb.wait_for_element('iframe', timeout=15)
-        print("🛡️ 捕捉到白色验证框！正在执行物理穿透点击...")
+        # 🌟 致命修复：用 wait_for_element_present，无视任何视觉遮挡，只要 DOM 里有就抓！
+        sb.wait_for_element_present(CF_SELECTOR, timeout=15)
+        print("🛡️ 确认 CF 验证组件已出现！开始处决...")
         
-        # 强行切入验证码那个白色的独立画框
-        try:
-            sb.switch_to_frame('iframe')
-            print(">> 已进入验证框内部，正在点击白色区域...")
-            # 直接对着框的身体（body）点下去，触发验证！
-            sb.click("body") 
-            sb.sleep(2)
-            # 退出画框，回到主页面
-            sb.switch_to_default_content()
-        except Exception as e:
-            print(f"物理穿透点击出现偏差: {e}")
-            sb.switch_to_default_content()
-
-        # 兜底保险：再让内置的 UC 模式尝试自动识别破解一次
+        # 为了防误判，强行把验证码也滚到屏幕最中央
+        sb.execute_script(f"""
+            var cf = document.querySelector('{CF_SELECTOR}');
+            if(cf) cf.scrollIntoView({{block: "center"}});
+        """)
+        sb.sleep(2)
+        
+        # 🗡️ 攻击手段 A：使用 UC 模式最强物理外挂（模拟真人鼠标移动过去点击）
+        print("-> 释放攻击 A: UC 真人物理点击...")
         try:
             sb.uc_gui_click_captcha()
-        except:
+            sb.sleep(2)
+        except: 
             pass
+        
+        # 🗡️ 攻击手段 B：钻进画框内部强行引爆
+        print("-> 释放攻击 B: 画框内部 DOM 穿透点击...")
+        if sb.is_element_present(CF_SELECTOR):
+            try:
+                sb.switch_to_frame(CF_SELECTOR)
+                sb.click("body", timeout=2) # 直接猛点验证码的白色身体
+                sb.switch_to_default_content()
+            except:
+                sb.switch_to_default_content()
 
-        print("给 CF 留出转圈圈验证的时间...")
-        sb.sleep(6) 
-        print("✅ CF 验证框点击指令已执行！")
+        print("⏳ 给定 6 秒钟时间等待 CF 盾绿灯...")
+        sb.sleep(6)
+        print("✅ CF 处决流程完毕！")
 
     except Exception as e:
-        print(f"未能抓到验证框报错 (可能已秒过): {e}")
+        print(f"未抓捕到 CF 组件 (可能已秒过或未弹出): {e}")
 
     # =========================================================================
 
