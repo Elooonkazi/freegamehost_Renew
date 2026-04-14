@@ -65,7 +65,7 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """终极大彻大悟版：放弃雷达识别，直接全图火力覆盖盲打！"""
+    """通关版：自动粉碎广告 + 精准爆头 CF + 智能监控"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
@@ -89,78 +89,92 @@ def execute_renewal(sb, email):
             }
         }
     """)
-    print("✅ 成功点击续期按钮！")
+    print("✅ 成功点击续期按钮！等待 CF 加载...")
+    sb.sleep(6) 
 
-    # ================= 🚨 最终 Boss 战：无差别盲打模式 🚨 =================
-    # 🌟 致命修复：彻底删掉所有坑爹的 wait_for_element 识别代码，改为物理硬等！
-    print("死等 8 秒，让 CF 验证码子弹飞一会儿...")
-    sb.sleep(8) 
+    # ================= 🚨 广告粉碎机 🚨 =================
+    print("启动广告粉碎机，清理可能弹出的遮罩...")
+    sb.execute_script("""
+        // 1. 自动点击广告右上角的 Close 按钮
+        var items = document.querySelectorAll('span, div, a, button');
+        for(var i=0; i<items.length; i++) {
+            var t = items[i].innerText || "";
+            if(t.trim() === 'Close' || t.trim() === 'CLOSE') {
+                try { items[i].click(); } catch(e){}
+            }
+        }
+        // 2. 物理毁灭广告遮罩层
+        var divs = document.querySelectorAll('div');
+        for(var i=0; i<divs.length; i++) {
+            var t = divs[i].innerText || "";
+            if(t.includes('DOWNLOAD EXTENSION') && t.includes('2 Easy Steps')) {
+                divs[i].remove();
+            }
+        }
+    """)
+    sb.sleep(2)
 
-    print("放弃花里胡哨的识别，启动【全图盲打扫射】模式！")
+    # ================= 🚨 CF 精确制导 🚨 =================
+    print("锁定 CF 验证码，执行精准打击...")
     
-    # 🗡️ 杀招 A：UC 模式自带破解器盲放
-    print("-> 释放杀招 A: 原生 UC 破解器扫描...")
+    # 🗡️ 杀招 A：UC 原生物理点击
+    print("-> 释放杀招 A: UC 真人鼠标点击...")
     try:
         sb.uc_gui_click_captcha()
     except:
         pass
-        
-    sb.sleep(2)
+    sb.sleep(3)
 
-    # 🗡️ 杀招 B：获取全图所有 iframe，挨个钻进去开枪！
-    print("-> 释放杀招 B: 遍历全图突入画框盲打...")
-    try:
-        # 获取页面上无论隐藏还是显示的所有 iframe
-        iframes = sb.find_elements("iframe")
-        print(f"🔍 全图扫描到 {len(iframes)} 个 iframe 画框，准备逐一突入...")
-        
-        for index, frame in enumerate(iframes):
+    # 🗡️ 杀招 B：只找名字带 Cloudflare 的框，不再扫射无辜广告
+    print("-> 释放杀招 B: 精确突入 CF 画框...")
+    cf_selectors = [
+        'iframe[src*="cloudflare"]',
+        'iframe[src*="turnstile"]',
+        'iframe[title*="Cloudflare"]',
+        'iframe[src*="challenge"]'
+    ]
+    
+    for sel in cf_selectors:
+        if sb.is_element_present(sel):
+            print(f"🎯 锁定 CF 目标 ({sel})，突入中...")
             try:
-                # 钻进画框内部
-                sb.switch_to_frame(frame)
-                # 对着画框的正中心（身体）或者复选框盲点一枪！
-                try:
-                    sb.click('.mark, label, input[type="checkbox"]', timeout=1)
-                except:
-                    sb.click('body', timeout=1)
-                
-                print(f"🎯 成功突入第 {index+1} 个画框并完成内部盲打点击！")
-            except:
-                pass # 如果这个画框不能点（比如是广告），直接跳过
-            finally:
-                # 必须退回主页面，才能进下一个画框
+                sb.switch_to_frame(sel)
+                sb.click('body', timeout=2) 
                 sb.switch_to_default_content()
-    except Exception as e:
-        print(f"盲打过程发生异常 (可忽略): {e}")
+                print("💥 精准爆头完成！")
+                break # 打完就跑，绝不逗留
+            except:
+                sb.switch_to_default_content()
 
-    print("给 CF 留出 8 秒钟的转圈确认时间...")
-    sb.sleep(8)
+    print("给 CF 留出 6 秒钟的转圈确认时间...")
+    sb.sleep(6)
 
     # ================= ⏳ 监控时间变化 ⏳ =================
     print("死盯 TIME REMAINING，等待时间重置/增加...")
     success = False
     
-    # 轮询检查 6 次，每次 3 秒（最多等 18 秒）
     for i in range(6): 
         sb.sleep(3)
         try:
+            # 循环内持续粉碎广告和点击确认按钮
+            sb.execute_script("""
+                var items = document.querySelectorAll('span, div, a, button');
+                for(var j=0; j<items.length; j++) {
+                    var t = items[j].innerText || "";
+                    t = t.trim();
+                    if(t === 'Close' || t === 'CLOSE' || t.includes('确认') || t.includes('Confirm') || t.includes('Yes')) {
+                        try { items[j].click(); } catch(e){}
+                    }
+                }
+            """)
+            
             current_text = sb.get_text('body').upper()
             if "HOURS" not in current_text or "SUCCESS" in current_text:
-                print(f"✅ 监控到面板状态已刷新！+8 HOURS 按钮已消失，时间已成功增加！(第 {i+1} 次检查)")
+                print(f"✅ 面板状态已刷新！+8 HOURS 按钮消失，时间已增加！(第 {i+1} 次检查)")
                 success = True
                 break
             else:
                 print(f"⌛ 时间尚未刷新，继续等待后台响应... ({i+1}/6)")
-                # 顺手点掉可能弹出的 Confirm 确认按钮
-                sb.execute_script("""
-                    var btns = document.querySelectorAll('button');
-                    for (var j = 0; j < btns.length; j++) {
-                        var txt = btns[j].innerText || btns[j].textContent;
-                        if (txt && (txt.includes('确认') || txt.includes('Confirm') || txt.includes('Yes'))) {
-                            btns[j].click();
-                        }
-                    }
-                """)
         except:
             pass
 
@@ -169,7 +183,6 @@ def execute_renewal(sb, email):
     else:
         print("⚠️ 监控超时，时间似乎没有增加，可能是 CF 验证失败了。")
 
-    # 拍下最终的案发现场发到你的 TG 上
     final_img = f"{email}_final_result.png"
     sb.save_screenshot(final_img)
     send_tg_photo(f"📸 续期流程结束，这是最终的现场快照。", final_img)
