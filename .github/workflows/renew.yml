@@ -15,14 +15,14 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: 🛠️ 下载并启动 Xray (VMess WS + 强制域名嗅探)
+      - name: 🛠️ 下载并启动 Xray (终极解法：HTTP入站 + VMess WS出站)
         shell: bash
         run: |
           echo "📥 下载 Windows 版 Xray 内核..."
           curl -L -o Xray-windows-64.zip "https://github.com/XTLS/Xray-core/releases/download/v1.8.24/Xray-windows-64.zip"
           unzip -q -o Xray-windows-64.zip -d xray_core
           
-          echo "📝 生成完美还原本地环境的配置..."
+          echo "📝 生成完美透传配置..."
           cat << 'EOF' > xray_core/config.json
           {
             "log": {
@@ -32,14 +32,7 @@ jobs:
               {
                 "port": 10808,
                 "listen": "127.0.0.1",
-                "protocol": "socks",
-                "sniffing": {
-                  "enabled": true,
-                  "destOverride": ["http", "tls"]
-                },
-                "settings": {
-                  "udp": true
-                }
+                "protocol": "http" 
               }
             ],
             "outbounds": [
@@ -70,10 +63,7 @@ jobs:
                   }
                 }
               }
-            ],
-            "routing": {
-              "domainStrategy": "AsIs"
-            }
+            ]
           }
           EOF
           
@@ -89,14 +79,17 @@ jobs:
           pip install seleniumbase requests
           seleniumbase install chromedriver
 
-      - name: 🚀 运行续期脚本
+      - name: 🚀 运行续期脚本 (强切 HTTP 代理)
         shell: bash
         env:
           PYTHONIOENCODING: utf-8
           FGH_ACCOUNT: ${{ secrets.FGH_ACCOUNT }}
           TG_BOT: ${{ secrets.TG_BOT }}
         run: |
-          echo "🚀 开始运行自动化脚本..."
+          echo "🔄 核心魔法：将 Python 脚本中的 SOCKS5 强制替换为 HTTP 代理..."
+          sed -i 's/socks5:\/\/127.0.0.1/http:\/\/127.0.0.1/g' renew.py
+          
+          echo "🚀 开始运行..."
           python renew.py
 
       - name: 📸 上传截图
