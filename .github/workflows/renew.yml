@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: 🛠️ 下载并启动 Xray (VLESS Reality + HTTP 代理模式)
+      - name: 🛠️ 下载并启动 Xray (Argo 节点 + HTTP 透明代理)
         run: |
           echo "📥 下载最新版 Xray 内核..."
           wget -q https://github.com/XTLS/Xray-core/releases/download/v1.8.24/Xray-linux-64.zip
@@ -33,30 +33,31 @@ jobs:
             ],
             "outbounds": [
               {
-                "protocol": "vless",
+                "protocol": "vmess",
                 "settings": {
                   "vnext": [
                     {
-                      "address": "35.208.69.48",
-                      "port": 35292,
+                      "address": "www.visa.com.sg",
+                      "port": 8443,
                       "users": [
                         {
                           "id": "bd613279-ca0c-492c-90a1-3dec6d77bf95",
-                          "encryption": "none",
-                          "flow": "xtls-rprx-vision"
+                          "alterId": 0,
+                          "security": "auto"
                         }
                       ]
                     }
                   ]
                 },
                 "streamSettings": {
-                  "network": "tcp",
-                  "security": "reality",
-                  "realitySettings": {
-                    "serverName": "apple.com",
-                    "fingerprint": "chrome",
-                    "publicKey": "6pm6V2dVxBBzV_ApD7FuFZ0CKfLHggiVGKeI9SQxJEc",
-                    "shortId": "2a507ec5"
+                  "network": "ws",
+                  "security": "tls",
+                  "tlsSettings": {
+                    "serverName": "www.visa.com.sg",
+                    "fingerprint": "chrome"
+                  },
+                  "wsSettings": {
+                    "path": "/bd613279-ca0c-492c-90a1-3dec6d77bf95-vm"
                   }
                 }
               }
