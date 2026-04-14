@@ -26,31 +26,29 @@ def send_tg_msg(msg):
 
 # ================= 核心魔法：注入你的 VIP 通行证 =================
 def inject_vip_cookies(sb):
-    # 🌟 关键修复：域名后缀改为 .xyz
-    domain = ".freegamehost.xyz" 
-    
+    # 🌟 修复魔法：移除 domain 强行绑定，只给名称和值，让浏览器自动识别当前域名！
     cookies = [
         {
             "name": "cf_clearance",
-            "value": "wIHY.vDl2N0tC2qnLX14QcMrMHAQdayMSvLSvGhl_Vc-1776164928-1.2.1.1-21UV17ZNUPP5TE86JDcrOiFKpAn5Uf1H.PjuD9L9NNgEsaETQsKCkHomf71NHVCBVQd3C6OIlg1BQr6s8MdyQYCNHyx._SPTyLO1MDxAYiWk1ZGAa5DNEmY8S3Li_rdJsJ1xfvj2LxFYAgkkhWh00Jcc5R9SQykDkI2vInTP3mo.0Mbi0Yas4xTKckLI.LQRtdbT.oLwEZnUzOHCzam1GiFXYZ4I6Znn.r4WQq_LSCdheyPXEMEMawvJFGZEi1CyFfEOfHHrWviFBCrNAgHa56lKQf32mB_UY3GfJimNzZqHfWo9FqjvpMksn6BVybM1uBfnYXjcWtHvXkfXVKbPxw",
-            "domain": domain
+            "value": "wIHY.vDl2N0tC2qnLX14QcMrMHAQdayMSvLSvGhl_Vc-1776164928-1.2.1.1-21UV17ZNUPP5TE86JDcrOiFKpAn5Uf1H.PjuD9L9NNgEsaETQsKCkHomf71NHVCBVQd3C6OIlg1BQr6s8MdyQYCNHyx._SPTyLO1MDxAYiWk1ZGAa5DNEmY8S3Li_rdJsJ1xfvj2LxFYAgkkhWh00Jcc5R9SQykDkI2vInTP3mo.0Mbi0Yas4xTKckLI.LQRtdbT.oLwEZnUzOHCzam1GiFXYZ4I6Znn.r4WQq_LSCdheyPXEMEMawvJFGZEi1CyFfEOfHHrWviFBCrNAgHa56lKQf32mB_UY3GfJimNzZqHfWo9FqjvpMksn6BVybM1uBfnYXjcWtHvXkfXVKbPxw"
         },
         {
             "name": "pterodactyl_session",
-            "value": "eyJpdiI6InBBdHlZRDA2cUFya1VxYVNkU2hwbmc9PSIsInZhbHVlIjoiaGM3M0t0Y0Z2Y0xNVnBBdkNpSGhiR3l1L2VqSXkrYWhhWnpzMlhDOExURWJwODlDOXNxUEd5eGhPaUh0L0lJUTJRMG9lNzA5cTdVNzR6am5STCtZZEJFZGVsdit3bmdjVU1zbm92b2VFOVhONDhzenRhUld0L1VFa2NPOWxmQWEiLCJtYWMiOiJkMjgyMWYwNTAzYWNjOTFkNWY0OTUyNDRjZmU3ZTRmNWZjMDFiZjgzMDY3ZjYwNWUwODcwNmI0OGI3YzkzODk0IiwidGFnIjoiIn0%3D",
-            "domain": domain
+            "value": "eyJpdiI6InBBdHlZRDA2cUFya1VxYVNkU2hwbmc9PSIsInZhbHVlIjoiaGM3M0t0Y0Z2Y0xNVnBBdkNpSGhiR3l1L2VqSXkrYWhhWnpzMlhDOExURWJwODlDOXNxUEd5eGhPaUh0L0lJUTJRMG9lNzA5cTdVNzR6am5STCtZZEJFZGVsdit3bmdjVU1zbm92b2VFOVhONDhzenRhUld0L1VFa2NPOWxmQWEiLCJtYWMiOiJkMjgyMWYwNTAzYWNjOTFkNWY0OTUyNDRjZmU3ZTRmNWZjMDFiZjgzMDY3ZjYwNWUwODcwNmI0OGI3YzkzODk0IiwidGFnIjoiIn0%3D"
         },
         {
             "name": "remember_web_59ba36addc2b2f9401580f014c7f58ea4e30989d",
-            "value": "eyJpdiI6IkIxUEVjRmhJUGdaZ2RzbjdPU083OUE9PSIsInZhbHVlIjoiZ3VFR0tMTGx4OG1FRUNSWFdYNFhLd0xTLzBRQkRJLzkzNmg2WHowN3czTWpRdUxPUjQ2ZDlGQm1rbDYwYWZpajl1WWtTM2oweEdFNkNiQ2Uxc2hRUXlYMi9ya3BjRm5Ib2NCQ0x1RXdPVUEwa3VINU02RVkyS255eUoxbnNQakI3eS9BbTNSTzBOM1J0WGJkWlBCRlVBWTNsRm1zczVzcGplK2NkUEVTL0pyNDZQclVtTXd1SWo1Ti9xUFUyRHo1cERJYnFIVU83N2RNM3NOaHJGY2xoTWI4cWptYnp0WEgzcWVSNnV3bHQ1TT0iLCJtYWMiOiJmOTFhYjk2ODEwZGMzYzU5ZjdmNWQ5ZDFhMGE0MTBlMzZlMWY2MDdkYTAzODRkMzViY2M5NmZlNTA5NTY2ODZjIiwidGFnIjoiIn0%3D",
-            "domain": domain
+            "value": "eyJpdiI6IkIxUEVjRmhJUGdaZ2RzbjdPU083OUE9PSIsInZhbHVlIjoiZ3VFR0tMTGx4OG1FRUNSWFdYNFhLd0xTLzBRQkRJLzkzNmg2WHowN3czTWpRdUxPUjQ2ZDlGQm1rbDYwYWZpajl1WWtTM2oweEdFNkNiQ2Uxc2hRUXlYMi9ya3BjRm5Ib2NCQ0x1RXdPVUEwa3VINU02RVkyS255eUoxbnNQakI3eS9BbTNSTzBOM1J0WGJkWlBCRlVBWTNsRm1zczVzcGplK2NkUEVTL0pyNDZQclVtTXd1SWo1Ti9xUFUyRHo1cERJYnFIVU83N2RNM3NOaHJGY2xoTWI4cWptYnp0WEgzcWVSNnV3bHQ1TT0iLCJtYWMiOiJmOTFhYjk2ODEwZGMzYzU5ZjdmNWQ5ZDFhMGE0MTBlMzZlMWY2MDdkYTAzODRkMzViY2M5NmZlNTA5NTY2ODZjIiwidGFnIjoiIn0%3D"
         }
     ]
     
-    # 注入 Cookie
+    # 安全注入 Cookie
     for cookie in cookies:
-        sb.driver.add_cookie(cookie)
-    print("✅ VIP Cookie 注入完毕！")
+        try:
+            sb.driver.add_cookie(cookie)
+        except Exception as e:
+            print(f"⚠️ 注入 {cookie['name']} 时出错: {e}")
+    print("✅ VIP Cookie 注入尝试完毕！")
 
 # ================= 主流程 =================
 def process_account(account):
@@ -61,23 +59,22 @@ def process_account(account):
     print(f"==========================================")
     print("🌐 启动浏览器...")
 
-    # 我们依然带着你的 HTTP 代理插件，以防万一
     with SB(uc=True, headless=False, proxy="fgh:renew@127.0.0.1:10808") as sb:
         try:
             sb.driver.set_window_size(1920, 1080)
             
-            # 第一步：先打开一个目标网站的 404 页面，获得 .xyz 的域名环境
-            print("正在获取域名许可...")
-            sb.uc_open_with_reconnect("https://panel.freegamehost.xyz/robots.txt", 10) # 🌟 修复为 .xyz
-            sb.sleep(2)
+            # 第一步：老老实实打开登录页，建立当前域名的信任上下文
+            print("正在踩点获取域名许可...")
+            sb.uc_open_with_reconnect("https://panel.freegamehost.xyz/auth/login", 10)
+            sb.sleep(3) # 🌟 强制等 3 秒，确立上下文
             
-            # 第二步：强行塞入登录凭证
+            # 第二步：趁其不备，塞入登录凭证
             print("正在注入登录状态...")
             inject_vip_cookies(sb)
             
-            # 第三步：拿着通行证，直接空降到面板主页
+            # 第三步：刷新页面或空降到面板主页，此时应该已经处于登录状态
             print("VIP 免密直达服务器面板...")
-            sb.uc_open_with_reconnect("https://panel.freegamehost.xyz/", 10) # 🌟 修复为 .xyz
+            sb.uc_open_with_reconnect("https://panel.freegamehost.xyz/", 10)
             sb.sleep(5)
 
             # 检查是否成功骗过了网站
