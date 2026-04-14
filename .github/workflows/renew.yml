@@ -32,9 +32,7 @@ jobs:
               {
                 "type": "mixed",
                 "listen": "127.0.0.1",
-                "listen_port": 10808,
-                "sniff": true,
-                "sniff_override_destination": true
+                "listen_port": 10808
               }
             ],
             "outbounds": [
@@ -94,13 +92,16 @@ jobs:
           pip install seleniumbase requests
           seleniumbase install chromedriver
 
-      - name: 🚀 运行续期脚本
+      - name: 🚀 运行续期脚本 (防 DNS 泄漏模式)
         env:
           PYTHONIOENCODING: utf-8
           FGH_ACCOUNT: ${{ secrets.FGH_ACCOUNT }}
           TG_BOT: ${{ secrets.TG_BOT }}
         run: |
-          # 直接运行脚本 (使用 renew.py 中写死的 socks5://127.0.0.1:10808)
+          # 核心魔法：强制 Chrome 使用 HTTP 代理，将 DNS 解析权完全移交给代理服务器！
+          sed -i 's/socks5:\/\/127.0.0.1:10808/http:\/\/127.0.0.1:10808/g' renew.py
+          
+          # 运行脚本
           xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" python renew.py
 
       - name: 📸 上传截图
