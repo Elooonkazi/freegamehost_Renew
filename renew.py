@@ -69,35 +69,21 @@ def execute_renewal(sb, email):
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
-    
-    # 🌟 修复：由于按钮在下半部分，我们强行让页面往下滚一点，确保它在可视范围内
-    print("向下滚动页面以寻找按钮...")
-    sb.execute_script("window.scrollBy(0, 500);")
-    sb.sleep(2)
 
     page_text = sb.get_text('body').upper()
-    # 修复防误判：如果页面有倒计时，但没有阻断点击，就不算在冷却中
     if "RENEWAL COOLDOWN" in page_text and "HOURS" not in page_text:
-        print("⏳ 目标服务器处于强制冷却期。")
+        print("⏳ 目标服务器处于冷却期。")
         cd_img = f"{email}_cooldown.png"
         sb.save_screenshot(cd_img)
         send_tg_photo(f"⏳ FGH 服务器 41ed8b6e 续期冷却中，时间未到。", cd_img)
         return True 
 
     print("寻找续期按钮 (+ 8 HOURS)...")
-    # 🌟 核心修复：精准定位带有 HOURS 或 + 8 的按钮！
-    RENEW_SELECTORS = 'button:contains("HOURS"), a:contains("HOURS"), .btn:contains("HOURS"), button:contains("Renew")'
-    
     try:
-        if sb.is_element_visible(RENEW_SELECTORS):
-            sb.click(RENEW_SELECTORS)
-            print("✅ 成功点击 +8 HOURS 按钮！")
-        else:
-            # 没看到就彻底滚到底部再试一次
-            sb.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            sb.sleep(2)
-            sb.click(RENEW_SELECTORS)
-            print("✅ 成功点击 +8 HOURS 按钮！")
+        # 🌟 终极去智障版点击：去掉所有的瞎滚代码，直接让它点击包含 HOURS 的任意元素
+        # SeleniumBase 发现元素后会自动把屏幕滚到那个按钮的位置！
+        sb.click('button:contains("HOURS"), a:contains("HOURS"), *:contains("HOURS")')
+        print("✅ 成功点击带有 HOURS 的续期按钮！")
     except Exception as e:
         err_img = f"{email}_no_button.png"
         sb.save_screenshot(err_img)
