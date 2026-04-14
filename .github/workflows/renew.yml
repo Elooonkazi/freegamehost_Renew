@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: 🛠️ 下载并启动 Xray (使用 VMess 节点)
+      - name: 🛠️ 下载并启动 Xray (使用 VMess 节点 + 开启嗅探)
         run: |
           echo "📥 下载最新版 Xray 内核..."
           wget -q https://github.com/XTLS/Xray-core/releases/download/v1.8.24/Xray-linux-64.zip
@@ -28,7 +28,11 @@ jobs:
               {
                 "port": 10808,
                 "listen": "127.0.0.1",
-                "protocol": "socks",
+                "protocol": "mixed",
+                "sniffing": {
+                  "enabled": true,
+                  "destOverride": ["http", "tls"]
+                },
                 "settings": {"udp": true}
               }
             ],
