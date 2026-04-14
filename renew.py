@@ -65,14 +65,14 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """听从指挥：滑到中间，点续期，然后处决 CF 验证码！"""
+    """终极通关版：滑到中间 -> 点续期 -> 宽频雷达捕捉验证码 -> 死磕点击 -> 监控时间变化"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
 
     page_text = sb.get_text('body').upper()
     if "RENEWAL COOLDOWN" in page_text and "HOURS" not in page_text:
-        print("⏳ 确认处于冷却期。")
+        print("⏳ 确认当前已处于冷却期。")
         cd_img = f"{email}_cooldown.png"
         sb.save_screenshot(cd_img)
         send_tg_photo(f"⏳ FGH 服务器 41ed8b6e 续期冷却中。", cd_img)
@@ -89,71 +89,85 @@ def execute_renewal(sb, email):
             }
         }
     """)
-    sb.sleep(3)
-    print("✅ 成功点击续期按钮！")
+    print("✅ 成功点击续期按钮！静静等待 5 秒让验证码弹出来...")
+    sb.sleep(5) 
 
-    # ================= 🚨 终极核弹：专杀 CF Turnstile 🚨 =================
-    print("死盯 CF 验证码加载 (最多 15 秒)...")
-    # 🌟 致命修复：精确制导！只找名字里带 cloudflare 或 turnstile 的框！
-    CF_SELECTOR = 'iframe[src*="cloudflare"], iframe[src*="turnstile"]'
+    # ================= 🚨 最终 Boss 战：全频段雷达猎杀 CF 🚨 =================
+    print("启动 CF 猎杀雷达...")
     
-    try:
-        # 🌟 致命修复：用 wait_for_element_present，无视任何视觉遮挡，只要 DOM 里有就抓！
-        sb.wait_for_element_present(CF_SELECTOR, timeout=15)
-        print("🛡️ 确认 CF 验证组件已出现！开始处决...")
+    # 🌟 致命修复：极其宽泛的匹配规则！只要涉及安全验证的框，一个不留！
+    BROAD_CF_SELECTOR = 'iframe[src*="cdn-cgi"], iframe[src*="challenge"], iframe[title*="Cloudflare"], iframe[title*="challenge"]'
+    
+    if sb.is_element_present(BROAD_CF_SELECTOR):
+        print("🛡️ 雷达锁定白色的验证画框！开始处决...")
         
-        # 为了防误判，强行把验证码也滚到屏幕最中央
+        # 防止错位，强行把验证码也滚到屏幕中间
         sb.execute_script(f"""
-            var cf = document.querySelector('{CF_SELECTOR}');
+            var cf = document.querySelector('{BROAD_CF_SELECTOR}');
             if(cf) cf.scrollIntoView({{block: "center"}});
         """)
-        sb.sleep(2)
-        
-        # 🗡️ 攻击手段 A：使用 UC 模式最强物理外挂（模拟真人鼠标移动过去点击）
-        print("-> 释放攻击 A: UC 真人物理点击...")
+        sb.sleep(1)
+
+        # 🗡️ 杀招 A：原生 UC 鼠标物理模拟点击（最强破解机制）
+        print("-> 释放杀招 A: 原生真人物理点击...")
         try:
             sb.uc_gui_click_captcha()
-            sb.sleep(2)
-        except: 
+        except:
             pass
-        
-        # 🗡️ 攻击手段 B：钻进画框内部强行引爆
-        print("-> 释放攻击 B: 画框内部 DOM 穿透点击...")
-        if sb.is_element_present(CF_SELECTOR):
+            
+        sb.sleep(3)
+
+        # 🗡️ 杀招 B：如果杀招 A 被闪避，直接切入画框贴脸开大！
+        print("-> 释放杀招 B: 深入画框内部强制点击...")
+        if sb.is_element_present(BROAD_CF_SELECTOR):
             try:
-                sb.switch_to_frame(CF_SELECTOR)
-                sb.click("body", timeout=2) # 直接猛点验证码的白色身体
+                sb.switch_to_frame(BROAD_CF_SELECTOR)
+                sb.click("body") # 直接猛击验证码框的身体
                 sb.switch_to_default_content()
-            except:
+            except Exception as e:
                 sb.switch_to_default_content()
+    else:
+        print("⚠️ 雷达未扫描到验证框，可能被隐身、或者你的 IP 太干净直接被秒过了。")
 
-        print("⏳ 给定 6 秒钟时间等待 CF 盾绿灯...")
-        sb.sleep(6)
-        print("✅ CF 处决流程完毕！")
+    # ================= ⏳ 监控时间变化（你要求的功能） ⏳ =================
+    print("死盯 TIME REMAINING，等待时间重置/增加...")
+    success = False
+    
+    # 轮询检查 6 次，每次 3 秒（最多等 18 秒）
+    for i in range(6): 
+        sb.sleep(3)
+        try:
+            current_text = sb.get_text('body').upper()
+            # 核心逻辑：如果成功加上了 8 小时，那个 "+ 8 HOURS" 的紫色按钮就会消失！
+            if "HOURS" not in current_text or "SUCCESS" in current_text:
+                print(f"✅ 监控到面板状态已刷新！+8 HOURS 按钮已消失，时间已成功增加！(第 {i+1} 次检查)")
+                success = True
+                break
+            else:
+                print(f"⌛ 时间尚未刷新，继续等待 CF 后台确认... ({i+1}/6)")
+                # 顺手点掉可能弹出的 Confirm 确认按钮
+                sb.execute_script("""
+                    var btns = document.querySelectorAll('button');
+                    for (var j = 0; j < btns.length; j++) {
+                        var txt = btns[j].innerText || btns[j].textContent;
+                        if (txt && (txt.includes('确认') || txt.includes('Confirm') || txt.includes('Yes'))) {
+                            btns[j].click();
+                        }
+                    }
+                """)
+        except:
+            pass
 
-    except Exception as e:
-        print(f"未抓捕到 CF 组件 (可能已秒过或未弹出): {e}")
+    if success:
+        print("🎉 续期彻底成功！")
+    else:
+        print("⚠️ 监控超时，时间似乎没有增加，可能是 CF 验证失败了。")
 
-    # =========================================================================
-
-    print("尝试点击可能存在的最终确认按钮...")
-    sb.execute_script("""
-        var btns = document.querySelectorAll('button');
-        for (var i = 0; i < btns.length; i++) {
-            var txt = btns[i].innerText || btns[i].textContent;
-            if (txt && (txt.includes('确认') || txt.includes('Confirm') || txt.includes('Yes') || txt.includes('Renew'))) {
-                btns[i].click();
-                break;
-            }
-        }
-    """)
-    sb.sleep(4)
-
-    print("🎉 任务终结！")
-    success_img = f"{email}_success.png"
-    sb.save_screenshot(success_img)
-    send_tg_photo(f"🎉 续期指令已发出！请检查截图确认状态。", success_img)
-    return True
+    # 拍下最终的案发现场发到你的 TG 上
+    final_img = f"{email}_final_result.png"
+    sb.save_screenshot(final_img)
+    send_tg_photo(f"📸 续期流程结束，这是最终的现场快照。", final_img)
+    return success
 
 # ================= 主流程 =================
 def process_account(account):
