@@ -6,7 +6,7 @@ from seleniumbase import SB
 
 # ================= 🚨 本地克隆配置区 🚨 =================
 
-# 1. 你本地的真实浏览器指纹 (保持与你提取 Cookie 时一致)
+# 1. 你本地的真实浏览器指纹
 MY_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
 
 # 2. 你本地的真实 Cookie 组合
@@ -65,23 +65,10 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """终极必杀版：原生 JS 像素级定位点击（彻底告别 jQuery）"""
+    """听从指挥：滑到中间，直接点！"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
-
-    # 🌟 第一步：暴力清理现场（使用原生 JS 强行关掉可能遮挡的弹窗）
-    print("清理页面干扰元素...")
-    sb.execute_script("""
-        var items = document.querySelectorAll('div, section, span');
-        for (var i = 0; i < items.length; i++) {
-            var txt = items[i].innerText || items[i].textContent;
-            if (txt && (txt.includes('Personal Information') || txt.includes('Cookie'))) {
-                items[i].remove();
-            }
-        }
-    """)
-    sb.sleep(2)
 
     page_text = sb.get_text('body').upper()
     if "RENEWAL COOLDOWN" in page_text and "HOURS" not in page_text:
@@ -91,53 +78,38 @@ def execute_renewal(sb, email):
         send_tg_photo(f"⏳ FGH 服务器 41ed8b6e 续期冷却中。", cd_img)
         return True 
 
-    print("寻找 + 8 HOURS 按钮并执行原生 JS 强制点击...")
+    print("听你的：正在往下滑动一点点...")
     
-    # 🌟 第二步：纯原生 JS 强力搜索并触发点击（没有任何 $ 符号）
-    click_script = """
-        var elements = document.querySelectorAll('button, a, [class*="btn"], div[class*="button"]');
-        var clicked = false;
-        // 倒序遍历，优先点击最内层的具体按钮
-        for (var i = elements.length - 1; i >= 0; i--) {
-            var txt = elements[i].innerText || elements[i].textContent;
-            if (txt && txt.includes('HOURS')) {
-                elements[i].click();
-                clicked = true;
+    # 🌟 核心极简逻辑：让浏览器自己把那个紫色的按钮移到屏幕最正中间！
+    # scrollIntoView({block: "center"}) 这个原生方法绝对管用，无视一切花里胡哨的布局
+    sb.execute_script("""
+        var btns = document.querySelectorAll('button, div[class*="btn"], div[class*="rounded"]');
+        for (var i = 0; i < btns.length; i++) {
+            if (btns[i].innerText && btns[i].innerText.includes('HOURS')) {
+                // 1. 滑动到屏幕正中间（完美避开底部广告）
+                btns[i].scrollIntoView({block: "center"});
+                // 2. 直接点它！
+                btns[i].click();
                 break;
             }
         }
-        return clicked;
-    """
-    
-    success_click = sb.execute_script(click_script)
-    
-    if success_click:
-        print("✅ 已通过原生 JS 强制触发续期点击！")
-    else:
-        # 兜底：如果 JS 没找到，尝试最后一次普通点击
-        try:
-            sb.click('button:contains("HOURS"), a:contains("HOURS")')
-            print("✅ 通过 SeleniumBase 选择器点击成功！")
-        except:
-            err_img = f"{email}_no_button.png"
-            sb.save_screenshot(err_img)
-            send_tg_photo(f"⚠️ 续期失败：原生 JS 和普通点击均未触及按钮。", err_img)
-            return False
+    """)
+    sb.sleep(3)
+    print("✅ 成功滑到中间并点击了续期按钮！")
 
-    # 🌟 第三步：处理后续可能弹出的 Cloudflare 动作验证
     print("等待后续验证...")
     sb.sleep(5)
     if sb.is_element_present('iframe[src*="cloudflare"]'):
         sb.uc_gui_click_captcha()
         sb.sleep(4)
 
-    # 尝试使用原生 JS 点击任何可能弹出的“确认”按钮
-    print("尝试点击可能存在的确认按钮...")
+    # 尝试点击任何可能弹出的“确认”按钮
+    print("尝试点击弹出的确认按钮...")
     sb.execute_script("""
-        var btns = document.querySelectorAll('button, a, [class*="btn"]');
+        var btns = document.querySelectorAll('button');
         for (var i = 0; i < btns.length; i++) {
             var txt = btns[i].innerText || btns[i].textContent;
-            if (txt && (txt.includes('确认') || txt.includes('Confirm') || txt.includes('Yes'))) {
+            if (txt && (txt.includes('确认') || txt.includes('Confirm') || txt.includes('Yes') || txt.includes('Renew'))) {
                 btns[i].click();
                 break;
             }
