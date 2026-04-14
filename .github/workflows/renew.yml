@@ -5,7 +5,7 @@ on:
     - cron: '30 2,10,18 * * *'
 jobs:
   run_fgh_renew:
-    runs-on: windows-latest # 保持 Windows 真实环境
+    runs-on: windows-latest
     steps:
       - name: 📥 检出仓库
         uses: actions/checkout@v4
@@ -15,24 +15,28 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: 🛠️ 下载并启动 Xray (纯净透明 VMess WS 模式)
+      - name: 🛠️ 下载并启动 Xray (VMess WS + 强制域名嗅探)
         shell: bash
         run: |
           echo "📥 下载 Windows 版 Xray 内核..."
           curl -L -o Xray-windows-64.zip "https://github.com/XTLS/Xray-core/releases/download/v1.8.24/Xray-windows-64.zip"
           unzip -q -o Xray-windows-64.zip -d xray_core
           
-          echo "📝 生成最纯净的透明代理配置..."
+          echo "📝 生成完美还原本地环境的配置..."
           cat << 'EOF' > xray_core/config.json
           {
             "log": {
-              "loglevel": "info"
+              "loglevel": "warning"
             },
             "inbounds": [
               {
                 "port": 10808,
                 "listen": "127.0.0.1",
                 "protocol": "socks",
+                "sniffing": {
+                  "enabled": true,
+                  "destOverride": ["http", "tls"]
+                },
                 "settings": {
                   "udp": true
                 }
@@ -66,7 +70,10 @@ jobs:
                   }
                 }
               }
-            ]
+            ],
+            "routing": {
+              "domainStrategy": "AsIs"
+            }
           }
           EOF
           
@@ -82,7 +89,7 @@ jobs:
           pip install seleniumbase requests
           seleniumbase install chromedriver
 
-      - name: 🚀 运行续期脚本 (原汁原味)
+      - name: 🚀 运行续期脚本
         shell: bash
         env:
           PYTHONIOENCODING: utf-8
@@ -90,7 +97,6 @@ jobs:
           TG_BOT: ${{ secrets.TG_BOT }}
         run: |
           echo "🚀 开始运行自动化脚本..."
-          # 脚本会直接使用内部写好的 socks5://127.0.0.1:10808
           python renew.py
 
       - name: 📸 上传截图
