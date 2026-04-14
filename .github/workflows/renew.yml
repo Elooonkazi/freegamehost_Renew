@@ -87,15 +87,19 @@ jobs:
           pip install seleniumbase requests
           seleniumbase install chromedriver
 
-      - name: 🚀 运行续期脚本 (启用浏览器代理插件模式)
+      - name: 🚀 运行续期脚本 (赋予耐心模式)
         shell: bash
         env:
           PYTHONIOENCODING: utf-8
           FGH_ACCOUNT: ${{ secrets.FGH_ACCOUNT }}
           TG_BOT: ${{ secrets.TG_BOT }}
         run: |
-          echo "🔄 核心魔法：强制 SeleniumBase 识别账号密码，触发底层代理扩展模式！"
+          echo "🔄 核心魔法：触发底层代理扩展模式..."
           sed -i 's/socks5:\/\/127.0.0.1:10808/fgh:renew@127.0.0.1:10808/g' renew.py
+          
+          echo "⏳ 耐心魔法：给 Cloudflare 留出 20 秒的加载时间！"
+          sed -i 's/sb.sleep(2)/sb.sleep(20)/g' renew.py
+          sed -i 's/sb.sleep(5)/sb.sleep(15)/g' renew.py
           
           echo "🚀 开始运行..."
           python renew.py
