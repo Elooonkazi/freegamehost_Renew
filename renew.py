@@ -65,7 +65,7 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """永不妥协：疯狗模式状态机轮询 (无视一切广告、弹窗、劫持)"""
+    """真正的疯狗模式：无视一切前置条件，看见什么点什么！"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
@@ -78,42 +78,33 @@ def execute_renewal(sb, email):
         send_tg_photo(f"⏳ FGH 服务器 41ed8b6e 续期冷却中。", cd_img)
         return True 
 
-    print("🔄 开启终极火力覆盖循环 (最多尝试 8 波攻势)...")
+    print("🔄 开启无限制火力覆盖循环 (最多尝试 8 波攻势)...")
     success = False
 
     for attempt in range(8):
         print(f"\n--- 🚀 第 {attempt + 1} 波攻势 ---")
 
-        # 1. 检查是否已经彻底胜利 (目标按钮消失)
+        # 1. 检查是否已经彻底胜利 (加时成功后 HOURS 按钮会消失)
         current_text = sb.get_text('body').upper()
         if "HOURS" not in current_text or "SUCCESS" in current_text:
             print("✅ 监控到面板状态已刷新！+8 HOURS 按钮已消失，时间已成功增加！")
             success = True
             break
 
-        # 2. 广告粉碎机 (每次攻击前先扫清障碍)
-        print("🧹 清理战场广告与遮罩...")
+        # 2. 广告粉碎机 (无情连点器)
+        print("🧹 清理战场广告与弹窗...")
         sb.execute_script("""
-            // 疯狂点击页面上所有的 Close 按钮
             var items = document.querySelectorAll('span, div, a, button');
             for(var i=0; i<items.length; i++) {
                 var t = items[i].innerText || "";
-                if(t.trim() === 'Close' || t.trim() === 'CLOSE') {
+                if(t.trim() === 'Close' || t.trim() === 'CLOSE' || t.includes('Not Sell')) {
                     try { items[i].click(); } catch(e){}
-                }
-            }
-            // 直接把那个黑心的 DOWNLOAD 广告物理删除
-            var divs = document.querySelectorAll('div');
-            for(var i=0; i<divs.length; i++) {
-                var t = divs[i].innerText || "";
-                if(t.includes('DOWNLOAD EXTENSION') || t.includes('2 Easy Steps')) {
-                    divs[i].remove();
                 }
             }
         """)
         sb.sleep(1)
 
-        # 3. 寻找并点击续期按钮 (即使前几次被劫持，这一轮也会继续点)
+        # 3. 寻找并点击续期按钮
         print("🎯 锁定并点击续期按钮 (+8 HOURS)...")
         sb.execute_script("""
             var btns = document.querySelectorAll('button, div[class*="btn"], div[class*="rounded"]');
@@ -125,37 +116,40 @@ def execute_renewal(sb, email):
                 }
             }
         """)
-        sb.sleep(4) # 给 CF 弹窗留出加载时间
+        sb.sleep(5) # 必须等够 5 秒，让 CF 完全渲染出来！
 
-        # 4. 扫描并处理 CF
-        print("🛡️ 雷达扫描 CF 验证码...")
-        cf_selectors = [
-            'iframe[src*="turnstile"]',
-            'iframe[src*="cloudflare"]',
-            'iframe[src*="challenge"]'
-        ]
-        cf_found = False
-        for sel in cf_selectors:
-            if sb.is_element_present(sel):
-                cf_found = True
-                print(f"💥 发现 CF 目标，突入爆头！({sel})")
-                
-                # 先尝试原生点击器
-                try: sb.uc_gui_click_captcha()
-                except: pass
-                
-                # 再尝试物理穿透
+        # ================= 🚨 终极核弹 🚨 =================
+        # 4. 盲放终极大招：CF 毁灭者 (绝不写 IF 语句判断，直接开大！)
+        print("🛡️ 无差别释放 CF 毁灭者...")
+        
+        # 第一重火力：UC 官方外挂，全屏幕扫描验证码特征并模拟真人点击
+        try:
+            sb.uc_gui_click_captcha()
+            print("💥 UC 真人鼠标物理外挂已触发！")
+        except:
+            pass
+            
+        sb.sleep(2)
+
+        # 第二重火力：画框潜入刺杀！只进小尺寸画框，防大广告劫持
+        try:
+            iframes = sb.find_elements("iframe")
+            for frame in iframes:
                 try:
-                    sb.switch_to_frame(sel)
-                    sb.click('body', timeout=2)
-                    sb.switch_to_default_content()
+                    w = frame.size.get('width', 0)
+                    h = frame.size.get('height', 0)
+                    # CF 验证码通常是长条形，超过 500x500 的基本是纯广告遮罩，我们不进去
+                    if 10 < w < 500 and 10 < h < 500:
+                        sb.switch_to_frame(frame)
+                        sb.click('body', timeout=1) # 对着白板就是一枪
+                        sb.switch_to_default_content()
                 except:
                     sb.switch_to_default_content()
-                break # 打完当前这个就退出 CF 扫描
-        
-        if cf_found:
-            print("⏳ 破甲弹已发射，等待 CF 服务器验证 (5秒)...")
-            sb.sleep(5)
+        except Exception as e:
+            pass
+
+        print("⏳ 破甲弹已发射，等待 CF 服务器转圈圈响应 (5秒)...")
+        sb.sleep(5)
 
         # 5. 点击所有确认按钮
         print("✅ 尝试确认最终授权弹窗...")
@@ -168,7 +162,7 @@ def execute_renewal(sb, email):
                 }
             }
         """)
-        sb.sleep(3) # 本波攻势结束，稍作停顿进入下一波
+        sb.sleep(3) 
 
     if success:
         print("🎉 漫长战役终结，续期彻底成功！")
