@@ -65,7 +65,7 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """终极通关版：滑到中间 -> 点续期 -> 宽频雷达捕捉验证码 -> 死磕点击 -> 监控时间变化"""
+    """终极通关版：主动雷达持续追踪 + 暴力破解 + 监控时间变化"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
@@ -89,16 +89,18 @@ def execute_renewal(sb, email):
             }
         }
     """)
-    print("✅ 成功点击续期按钮！静静等待 5 秒让验证码弹出来...")
-    sb.sleep(5) 
+    print("✅ 成功点击续期按钮！")
+    # 删除了愚蠢的 sleep(5)，直接进入主动雷达监控状态！
 
-    # ================= 🚨 最终 Boss 战：全频段雷达猎杀 CF 🚨 =================
-    print("启动 CF 猎杀雷达...")
+    # ================= 🚨 最终 Boss 战：全频段主动雷达 🚨 =================
+    print("启动 CF 猎杀雷达，死盯屏幕 (最高监控 20 秒)...")
     
-    # 🌟 致命修复：极其宽泛的匹配规则！只要涉及安全验证的框，一个不留！
-    BROAD_CF_SELECTOR = 'iframe[src*="cdn-cgi"], iframe[src*="challenge"], iframe[title*="Cloudflare"], iframe[title*="challenge"]'
+    # 🌟 致命修复 1：加上了 challenges 域名，这是 CF 最常用的发包域名
+    BROAD_CF_SELECTOR = 'iframe[src*="cloudflare"], iframe[src*="challenges"], iframe[src*="turnstile"], iframe[src*="cdn-cgi"]'
     
-    if sb.is_element_present(BROAD_CF_SELECTOR):
+    try:
+        # 🌟 致命修复 2：主动持续监控！只要 20 秒内出现，立刻捕获！
+        sb.wait_for_element_present(BROAD_CF_SELECTOR, timeout=20)
         print("🛡️ 雷达锁定白色的验证画框！开始处决...")
         
         # 防止错位，强行把验证码也滚到屏幕中间
@@ -106,9 +108,9 @@ def execute_renewal(sb, email):
             var cf = document.querySelector('{BROAD_CF_SELECTOR}');
             if(cf) cf.scrollIntoView({{block: "center"}});
         """)
-        sb.sleep(1)
+        sb.sleep(2)
 
-        # 🗡️ 杀招 A：原生 UC 鼠标物理模拟点击（最强破解机制）
+        # 🗡️ 杀招 A：原生 UC 鼠标物理模拟点击
         print("-> 释放杀招 A: 原生真人物理点击...")
         try:
             sb.uc_gui_click_captcha()
@@ -126,10 +128,11 @@ def execute_renewal(sb, email):
                 sb.switch_to_default_content()
             except Exception as e:
                 sb.switch_to_default_content()
-    else:
-        print("⚠️ 雷达未扫描到验证框，可能被隐身、或者你的 IP 太干净直接被秒过了。")
+                
+    except Exception:
+        print("⚠️ 雷达监控 20 秒结束，未扫描到验证框 (可能被隐身或已被秒过)。")
 
-    # ================= ⏳ 监控时间变化（你要求的功能） ⏳ =================
+    # ================= ⏳ 监控时间变化 ⏳ =================
     print("死盯 TIME REMAINING，等待时间重置/增加...")
     success = False
     
@@ -138,7 +141,6 @@ def execute_renewal(sb, email):
         sb.sleep(3)
         try:
             current_text = sb.get_text('body').upper()
-            # 核心逻辑：如果成功加上了 8 小时，那个 "+ 8 HOURS" 的紫色按钮就会消失！
             if "HOURS" not in current_text or "SUCCESS" in current_text:
                 print(f"✅ 监控到面板状态已刷新！+8 HOURS 按钮已消失，时间已成功增加！(第 {i+1} 次检查)")
                 success = True
