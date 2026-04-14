@@ -5,7 +5,7 @@ on:
     - cron: '30 2,10,18 * * *'
 jobs:
   run_fgh_renew:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest # 🌟 核心杀招：切换到 Windows 环境！
     steps:
       - name: 📥 检出仓库
         uses: actions/checkout@v4
@@ -13,96 +13,82 @@ jobs:
       - name: 🐍 设置 Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.10'
 
-      - name: 🛠️ 下载并启动 sing-box (VLESS Reality 节点)
+      - name: 🛠️ 下载并启动 Xray (Windows版 VLESS 节点)
         run: |
-          echo "📥 下载最新版 sing-box 内核..."
-          wget -q https://github.com/SagerNet/sing-box/releases/download/v1.9.0/sing-box-1.9.0-linux-amd64.tar.gz
-          tar -xzf sing-box-1.9.0-linux-amd64.tar.gz
-          mv sing-box-1.9.0-linux-amd64/sing-box .
+          echo "📥 下载 Windows 版 Xray 内核..."
+          Invoke-WebRequest -Uri "https://github.com/XTLS/Xray-core/releases/download/v1.8.24/Xray-windows-64.zip" -OutFile "Xray-windows-64.zip"
+          Expand-Archive -Path "Xray-windows-64.zip" -DestinationPath "xray_core" -Force
           
-          echo "📝 生成 sing-box 配置文件..."
-          cat << 'EOF' > config.json
+          echo "📝 生成配置文件..."
+          $config = @"
           {
-            "log": {
-              "level": "info"
-            },
             "inbounds": [
               {
-                "type": "mixed",
+                "port": 10808,
                 "listen": "127.0.0.1",
-                "listen_port": 10808
+                "protocol": "socks",
+                "sniffing": {
+                  "enabled": true,
+                  "destOverride": ["http", "tls"]
+                }
               }
             ],
             "outbounds": [
               {
-                "type": "vless",
-                "tag": "proxy",
-                "server": "35.208.69.48",
-                "server_port": 35292,
-                "uuid": "bd613279-ca0c-492c-90a1-3dec6d77bf95",
-                "flow": "xtls-rprx-vision",
-                "tls": {
-                  "enabled": true,
-                  "server_name": "apple.com",
-                  "utls": {
-                    "enabled": true,
-                    "fingerprint": "chrome"
-                  },
-                  "reality": {
-                    "enabled": true,
-                    "public_key": "6pm6V2dVxBBzV_ApD7FuFZ0CKfLHggiVGKeI9SQxJEc",
-                    "short_id": "2a507ec5"
+                "protocol": "vless",
+                "settings": {
+                  "vnext": [
+                    {
+                      "address": "35.208.69.48",
+                      "port": 35292,
+                      "users": [
+                        {
+                          "id": "bd613279-ca0c-492c-90a1-3dec6d77bf95",
+                          "encryption": "none",
+                          "flow": "xtls-rprx-vision"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "streamSettings": {
+                  "network": "tcp",
+                  "security": "reality",
+                  "realitySettings": {
+                    "serverName": "apple.com",
+                    "fingerprint": "chrome",
+                    "publicKey": "6pm6V2dVxBBzV_ApD7FuFZ0CKfLHggiVGKeI9SQxJEc",
+                    "shortId": "2a507ec5"
                   }
                 }
-              },
-              {
-                "type": "direct",
-                "tag": "direct"
               }
-            ],
-            "route": {
-              "rules": [
-                {
-                  "ip_is_private": true,
-                  "outbound": "direct"
-                }
-              ],
-              "auto_detect_interface": true
-            }
+            ]
           }
-          EOF
+"@
+          Set-Content -Path "xray_core\config.json" -Value $config
           
-          chmod +x sing-box
-          echo "🚀 后台启动 sing-box (监听 10808 混合端口)..."
-          nohup ./sing-box run -c config.json > sing-box.log 2>&1 &
-          
-          echo "⏳ 等待内核启动..."
-          sleep 5
-          cat sing-box.log
-
-      - name: 🛠️ 安装系统依赖
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y google-chrome-stable xvfb x11-utils xdotool scrot
+          cd xray_core
+          echo "🚀 后台启动 Xray..."
+          Start-Process -FilePath ".\xray.exe" -ArgumentList "run -c config.json" -WindowStyle Hidden
+          Start-Sleep -Seconds 5
 
       - name: 🐍 安装 Python 依赖
         run: |
+          python -m pip install --upgrade pip
           pip install seleniumbase requests
           seleniumbase install chromedriver
+          # Windows 下不需要安装 xvfb 虚拟显示依赖，原生支持！
 
-      - name: 🚀 运行续期脚本 (防 DNS 泄漏模式)
+      - name: 🚀 运行续期脚本
         env:
           PYTHONIOENCODING: utf-8
           FGH_ACCOUNT: ${{ secrets.FGH_ACCOUNT }}
           TG_BOT: ${{ secrets.TG_BOT }}
         run: |
-          # 核心魔法：强制 Chrome 使用 HTTP 代理，将 DNS 解析权完全移交给代理服务器！
-          sed -i 's/socks5:\/\/127.0.0.1:10808/http:\/\/127.0.0.1:10808/g' renew.py
-          
-          # 运行脚本
-          xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" python renew.py
+          # 原汁原味运行，自动读取 renew.py 里的 socks5 代理
+          python renew.py
 
       - name: 📸 上传截图
         if: always()
