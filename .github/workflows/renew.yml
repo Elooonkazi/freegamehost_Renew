@@ -15,16 +15,54 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: 🛠️ 下载并启动 Xray (手搓 SOCKS5 代理)
-        env:
-          XRAY_CONFIG: ${{ secrets.XRAY_CONFIG }}
+      - name: 🛠️ 下载并启动 Xray (使用 VMess 节点)
         run: |
           echo "📥 下载最新版 Xray 内核..."
           wget -q https://github.com/XTLS/Xray-core/releases/download/v1.8.24/Xray-linux-64.zip
-          unzip -q Xray-linux-64.zip -d xray_core
+          unzip -q -o Xray-linux-64.zip -d xray_core
           
           echo "📝 生成配置文件..."
-          echo "$XRAY_CONFIG" > xray_core/config.json
+          cat << 'EOF' > xray_core/config.json
+          {
+            "inbounds": [
+              {
+                "port": 10808,
+                "listen": "127.0.0.1",
+                "protocol": "socks",
+                "settings": {"udp": true}
+              }
+            ],
+            "outbounds": [
+              {
+                "protocol": "vmess",
+                "settings": {
+                  "vnext": [
+                    {
+                      "address": "35.208.69.48",
+                      "port": 8880,
+                      "users": [
+                        {
+                          "id": "bd613279-ca0c-492c-90a1-3dec6d77bf95",
+                          "alterId": 0,
+                          "security": "auto"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "streamSettings": {
+                  "network": "ws",
+                  "wsSettings": {
+                    "path": "/bd613279-ca0c-492c-90a1-3dec6d77bf95-vm",
+                    "headers": {
+                      "Host": "www.bing.com"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+          EOF
           
           cd xray_core
           chmod +x xray
