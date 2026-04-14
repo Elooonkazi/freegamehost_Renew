@@ -69,37 +69,57 @@ def execute_renewal(sb, email):
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
+    
+    # 🌟 修复：由于按钮在下半部分，我们强行让页面往下滚一点，确保它在可视范围内
+    print("向下滚动页面以寻找按钮...")
+    sb.execute_script("window.scrollBy(0, 500);")
+    sb.sleep(2)
 
     page_text = sb.get_text('body').upper()
-    if "RENEWAL COOLDOWN" in page_text:
-        print("⏳ 目标服务器处于冷却期。")
+    # 修复防误判：如果页面有倒计时，但没有阻断点击，就不算在冷却中
+    if "RENEWAL COOLDOWN" in page_text and "HOURS" not in page_text:
+        print("⏳ 目标服务器处于强制冷却期。")
         cd_img = f"{email}_cooldown.png"
         sb.save_screenshot(cd_img)
         send_tg_photo(f"⏳ FGH 服务器 41ed8b6e 续期冷却中，时间未到。", cd_img)
         return True 
 
-    print("寻找续期按钮...")
-    if sb.is_element_visible('button:contains("续期")') or sb.is_element_visible('button:contains("Renew")'):
-        sb.click('button:contains("续期"), button:contains("Renew")')
-    else:
-        try:
-            sb.click('a:contains("续期"), a:contains("Renew"), a:contains("Billing")')
-            sb.sleep(2)
-            sb.click('button:contains("续期"), button:contains("Renew")')
-        except:
-            err_img = f"{email}_no_button.png"
-            sb.save_screenshot(err_img)
-            send_tg_photo(f"⚠️ 续期失败：未找到续期按钮。", err_img)
-            return False
-
-    sb.sleep(5)
-    if sb.is_element_present('iframe[src*="cloudflare"]'):
-        sb.uc_gui_click_captcha()
-        sb.sleep(3)
-
-    sb.click('button:contains("确认"), button:contains("Confirm"), button[class*="success"]')
-    sb.sleep(4)
+    print("寻找续期按钮 (+ 8 HOURS)...")
+    # 🌟 核心修复：精准定位带有 HOURS 或 + 8 的按钮！
+    RENEW_SELECTORS = 'button:contains("HOURS"), a:contains("HOURS"), .btn:contains("HOURS"), button:contains("Renew")'
     
+    try:
+        if sb.is_element_visible(RENEW_SELECTORS):
+            sb.click(RENEW_SELECTORS)
+            print("✅ 成功点击 +8 HOURS 按钮！")
+        else:
+            # 没看到就彻底滚到底部再试一次
+            sb.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            sb.sleep(2)
+            sb.click(RENEW_SELECTORS)
+            print("✅ 成功点击 +8 HOURS 按钮！")
+    except Exception as e:
+        err_img = f"{email}_no_button.png"
+        sb.save_screenshot(err_img)
+        send_tg_photo(f"⚠️ 续期失败：依然没有找到带有 HOURS 的续期按钮。", err_img)
+        return False
+
+    print("等待可能出现的盾或确认弹窗...")
+    sb.sleep(5)
+    
+    if sb.is_element_present('iframe[src*="cloudflare"]'):
+        print("遇到动作验证，正在破解...")
+        sb.uc_gui_click_captcha()
+        sb.sleep(4)
+
+    # 如果有 Confirm 弹窗就点，没有就不管
+    print("尝试点击可能存在的确认按钮...")
+    CONFIRM_SELECTORS = 'button:contains("确认"), button:contains("Confirm"), button:contains("Yes"), button[class*="success"]'
+    if sb.is_element_visible(CONFIRM_SELECTORS):
+        sb.click(CONFIRM_SELECTORS)
+        sb.sleep(4)
+
+    print("🎉 续期操作执行完毕!")
     success_img = f"{email}_success.png"
     sb.save_screenshot(success_img)
     send_tg_photo(f"🎉 恭喜！FGH 服务器 41ed8b6e 续期操作成功！", success_img)
@@ -116,7 +136,6 @@ def process_account(account):
 
     # ---------------- 隔离区 A：尝试克隆 Cookie 秒进 ----------------
     print("▶️ 策略 A: 尝试 CDP 注入 Cookie 免密登录...")
-    # ⚠️ 核心：不传 proxy 参数，让系统 TUN 网卡接管流量
     with SB(uc=True, headless=False, agent=MY_USER_AGENT) as sb:
         sb.driver.set_window_size(1920, 1080)
         
@@ -134,14 +153,12 @@ def process_account(account):
     
     # ---------------- 隔离区 B：开启全新纯净浏览器，硬刚账号密码 ----------------
     print("🔄 启动策略 B: 开启全新纯净浏览器，执行物理登录...")
-    # ⚠️ 核心：不传 proxy 参数
     with SB(uc=True, headless=False, agent=MY_USER_AGENT) as sb:
         try:
             sb.driver.set_window_size(1920, 1080)
             sb.uc_open_with_reconnect("https://panel.freegamehost.xyz/auth/login", 10)
             sb.sleep(6)
             
-            # 对付可能存在的 5秒盾
             if sb.is_element_present('iframe[src*="cloudflare"]'):
                 print("🛡️ 检测到 Cloudflare 盾，执行纯净破解...")
                 sb.uc_gui_click_captcha()
