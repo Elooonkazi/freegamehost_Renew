@@ -15,25 +15,20 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: 🛠️ 下载并启动 Xray (使用 VLESS Reality 节点)
+      - name: 🛠️ 下载并启动 Xray (VLESS Reality + HTTP 代理模式)
         run: |
           echo "📥 下载最新版 Xray 内核..."
           wget -q https://github.com/XTLS/Xray-core/releases/download/v1.8.24/Xray-linux-64.zip
           unzip -q -o Xray-linux-64.zip -d xray_core
           
-          echo "📝 生成配置文件..."
+          echo "📝 生成 HTTP 代理配置文件..."
           cat << 'EOF' > xray_core/config.json
           {
             "inbounds": [
               {
-                "port": 10808,
+                "port": 10809,
                 "listen": "127.0.0.1",
-                "protocol": "socks",
-                "sniffing": {
-                  "enabled": true,
-                  "destOverride": ["http", "tls"]
-                },
-                "settings": {"udp": true}
+                "protocol": "http"
               }
             ],
             "outbounds": [
@@ -71,13 +66,9 @@ jobs:
           
           cd xray_core
           chmod +x xray
-          
-          echo "🚀 后台启动 Xray..."
+          echo "🚀 后台启动 Xray (监听 10809 HTTP 端口)..."
           nohup ./xray run -c config.json > xray.log 2>&1 &
-          
-          echo "⏳ 等待内核启动..."
           sleep 5
-          cat xray.log
 
       - name: 🛠️ 安装系统依赖
         run: |
@@ -89,12 +80,16 @@ jobs:
           pip install seleniumbase requests
           seleniumbase install chromedriver
 
-      - name: 🚀 运行续期脚本
+      - name: 🚀 运行续期脚本 (动态切换至 HTTP 代理)
         env:
           PYTHONIOENCODING: utf-8
           FGH_ACCOUNT: ${{ secrets.FGH_ACCOUNT }}
           TG_BOT: ${{ secrets.TG_BOT }}
         run: |
+          # 核心魔法：运行前，动态将 Python 脚本里的 SOCKS5 替换为 HTTP 代理
+          sed -i 's/socks5:\/\/127.0.0.1:10808/http:\/\/127.0.0.1:10809/g' renew.py
+          
+          # 运行脚本
           xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" python renew.py
 
       - name: 📸 上传截图
