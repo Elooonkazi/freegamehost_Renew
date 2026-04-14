@@ -4,7 +4,29 @@ import time
 import requests
 from seleniumbase import SB
 
-# ================= 配置读取 =================
+# ================= 🚨 终极克隆配置区 🚨 =================
+
+# 1. 你本地的真实浏览器指纹
+MY_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
+
+# 2. 你本地的最新真实 Cookie 组合
+MY_COOKIES = [
+    {
+        "name": "cf_clearance", 
+        "value": "o7tH8YbzuVDqzu3IuSi42d3U9.dOFlUsmQa.ixpcD0I-1776168022-1.2.1.1-ak8KC4txaydnj6dl287_JdV_EjP5yj6TZCf7dCjfSe3vKKYZPllYx5HtySb7dxluydiUYaBBybh.oTAFS9VO86ADi0zOhO7GdXa9yb39QD8vBBZ.gca3o4h3gxHE1vbXIVq6Ia.5os3NdgtzuAJxvSg7PYEkiAph2_.Z7iFQ0CDd87irFK3XMJUJLBrMyXLqd3ALylKmrWQLw8GXsGTmVAnkYcTo_BACHA2JcT4SQEvf9V1tqSAez8z6BkscHEp9xzGKjP8KxzeXCW3TGv2He2X5f3F7gRwz5r7NTmRto7Em8Gm_PM_EKtT3D9jdV5YMYdmGSyWGjRSQcr5NCtURbA"
+    },
+    {
+        "name": "pterodactyl_session", 
+        "value": "eyJpdiI6IjY2ZDVYd3llYi9WbmZqeGxHZFYyUVE9PSIsInZhbHVlIjoiVTd2WndFdHF2b042VExqMG5qdXI0bDZUUEJ2UDduOFdQRURBQmdsMEZLSjRrbjBRSE9NZEFvV1R5bzFKVTNhaUVlcXAyK0FBYVRKTStmdUpKYnFjcFlzaFpWRnp3ZWVsa0ZaVW9mMzVEU1ZIZjEwWE5GNE9hVVNtNnBwUTRQU0YiLCJtYWMiOiIwMTUyYmM2ZGJhYjcxZDdkM2ViNzZlNzMzM2Y3YTZiMTY2NDJlYmY0N2JjOTI4OTRjNjVkNzgwODI5YTg3NmM3IiwidGFnIjoiIn0%3D"
+    },
+    {
+        "name": "remember_web_59ba36addc2b2f9401580f014c7f58ea4e30989d", 
+        "value": "eyJpdiI6IkIxUEVjRmhJUGdaZ2RzbjdPU083OUE9PSIsInZhbHVlIjoiZ3VFR0tMTGx4OG1FRUNSWFdYNFhLd0xTLzBRQkRJLzkzNmg2WHowN3czTWpRdUxPUjQ2ZDlGQm1rbDYwYWZpajl1WWtTM2oweEdFNkNiQ2Uxc2hRUXlYMi9ya3BjRm5Ib2NCQ0x1RXdPVUEwa3VINU02RVkyS255eUoxbnNQakI3eS9BbTNSTzBOM1J0WGJkWlBCRlVBWTNsRm1zczVzcGplK2NkUEVTL0pyNDZQclVtTXd1SWo1Ti9xUFUyRHo1cERJYnFIVU83N2RNM3NOaHJGY2xoTWI4cWptYnp0WEgzcWVSNnV3bHQ1TT0iLCJtYWMiOiJmOTFhYjk2ODEwZGMzYzU5ZjdmNWQ5ZDFhMGE0MTBlMzZlMWY2MDdkYTAzODRkMzViY2M5NmZlNTA5NTY2ODZjIiwidGFnIjoiIn0%3D"
+    }
+]
+
+# ==============================================================================
+
 FGH_ACCOUNT_ENV = os.environ.get('FGH_ACCOUNT', '[]')
 TG_BOT_ENV = os.environ.get('TG_BOT', '')
 TARGET_SERVER_URL = "https://panel.freegamehost.xyz/server/41ed8b6e"
@@ -30,21 +52,17 @@ def send_tg_photo(msg, photo_path=None):
     except Exception as e:
         print(f"⚠️ TG 通知发送失败: {e}")
 
-# ================= 核心组件 =================
 def inject_vip_cookies_via_cdp(sb):
-    cookies = [
-        {"name": "cf_clearance", "value": "wIHY.vDl2N0tC2qnLX14QcMrMHAQdayMSvLSvGhl_Vc-1776164928-1.2.1.1-21UV17ZNUPP5TE86JDcrOiFKpAn5Uf1H.PjuD9L9NNgEsaETQsKCkHomf71NHVCBVQd3C6OIlg1BQr6s8MdyQYCNHyx._SPTyLO1MDxAYiWk1ZGAa5DNEmY8S3Li_rdJsJ1xfvj2LxFYAgkkhWh00Jcc5R9SQykDkI2vInTP3mo.0Mbi0Yas4xTKckLI.LQRtdbT.oLwEZnUzOHCzam1GiFXYZ4I6Znn.r4WQq_LSCdheyPXEMEMawvJFGZEi1CyFfEOfHHrWviFBCrNAgHa56lKQf32mB_UY3GfJimNzZqHfWo9FqjvpMksn6BVybM1uBfnYXjcWtHvXkfXVKbPxw"},
-        {"name": "pterodactyl_session", "value": "eyJpdiI6InBBdHlZRDA2cUFya1VxYVNkU2hwbmc9PSIsInZhbHVlIjoiaGM3M0t0Y0Z2Y0xNVnBBdkNpSGhiR3l1L2VqSXkrYWhhWnpzMlhDOExURWJwODlDOXNxUEd5eGhPaUh0L0lJUTJRMG9lNzA5cTdVNzR6am5STCtZZEJFZGVsdit3bmdjVU1zbm92b2VFOVhONDhzenRhUld0L1VFa2NPOWxmQWEiLCJtYWMiOiJkMjgyMWYwNTAzYWNjOTFkNWY0OTUyNDRjZmU3ZTRmNWZjMDFiZjgzMDY3ZjYwNWUwODcwNmI0OGI3YzkzODk0IiwidGFnIjoiIn0%3D"},
-        {"name": "remember_web_59ba36addc2b2f9401580f014c7f58ea4e30989d", "value": "eyJpdiI6IkIxUEVjRmhJUGdaZ2RzbjdPU083OUE9PSIsInZhbHVlIjoiZ3VFR0tMTGx4OG1FRUNSWFdYNFhLd0xTLzBRQkRJLzkzNmg2WHowN3czTWpRdUxPUjQ2ZDlGQm1rbDYwYWZpajl1WWtTM2oweEdFNkNiQ2Uxc2hRUXlYMi9ya3BjRm5Ib2NCQ0x1RXdPVUEwa3VINU02RVkyS255eUoxbnNQakI3eS9BbTNSTzBOM1J0WGJkWlBCRlVBWTNsRm1zczVzcGplK2NkUEVTL0pyNDZQclVtTXd1SWo1Ti9xUFUyRHo1cERJYnFIVU83N2RNM3NOaHJGY2xoTWI4cWptYnp0WEgzcWVSNnV3bHQ1TT0iLCJtYWMiOiJmOTFhYjk2ODEwZGMzYzU5ZjdmNWQ5ZDFhMGE0MTBlMzZlMWY2MDdkYTAzODRkMzViY2M5NmZlNTA5NTY2ODZjIiwidGFnIjoiIn0%3D"}
-    ]
-    for c in cookies:
+    print("正在通过 Chrome 开发者协议 (CDP) 强制写入本地克隆 Cookie...")
+    for c in MY_COOKIES:
         try:
             sb.driver.execute_cdp_cmd('Network.setCookie', {
                 'name': c['name'], 'value': c['value'],
                 'domain': 'panel.freegamehost.xyz', 'path': '/', 'secure': True
             })
-        except:
-            pass
+            print(f"✅ CDP 强注成功: {c['name']}")
+        except Exception as e:
+            print(f"⚠️ CDP 写入失败: {e}")
 
 def execute_renewal(sb, email):
     """单独封装的续期动作"""
@@ -96,30 +114,32 @@ def process_account(account):
     print(f"👤 开始处理账号: {email}")
     print(f"==========================================")
 
-    # ---------------- 隔离区 A：尝试 Cookie ----------------
+    # ---------------- 隔离区 A：尝试 Cookie (携入克隆 UA) ----------------
     print("▶️ 策略 A: 尝试 CDP 注入 Cookie 免密登录...")
-    with SB(uc=True, headless=False, proxy="fgh:renew@127.0.0.1:10808") as sb:
+    with SB(uc=True, headless=False, proxy="fgh:renew@127.0.0.1:10808", agent=MY_USER_AGENT) as sb:
         sb.driver.set_window_size(1920, 1080)
-        sb.uc_open_with_reconnect("about:blank", 5) 
+        
+        # 使用 uc_open_with_tab 规避一些针对首个空白标签页的检测
+        sb.uc_open_with_tab("about:blank") 
         inject_vip_cookies_via_cdp(sb)
+        
         sb.uc_open_with_reconnect("https://panel.freegamehost.xyz/", 10)
         sb.sleep(6)
 
         if sb.is_element_visible('a[href="/account"]') or sb.is_element_visible('.fa-sign-out-alt'):
-            print("✅ 策略 A 成功！直接执行续期...")
+            print("✅ 策略 A 成功！完美通过身份验证！")
             return execute_renewal(sb, email)
         else:
             print("⚠️ 策略 A (Cookie) 失效或被 CF 拦截！准备关闭受污染的浏览器...")
-    # 这里 with 代码块结束，受污染的浏览器会被彻底销毁！
+    # 受污染的浏览器销毁完毕
 
-    # ---------------- 隔离区 B：纯净浏览器尝试物理登录 ----------------
+    # ---------------- 隔离区 B：纯净浏览器尝试物理登录 (携入克隆 UA) ----------------
     print("🔄 启动策略 B: 开启全新纯净浏览器，执行物理登录...")
-    with SB(uc=True, headless=False, proxy="fgh:renew@127.0.0.1:10808") as sb:
+    with SB(uc=True, headless=False, proxy="fgh:renew@127.0.0.1:10808", agent=MY_USER_AGENT) as sb:
         try:
             sb.driver.set_window_size(1920, 1080)
             sb.uc_open_with_reconnect("https://panel.freegamehost.xyz/auth/login", 10)
             
-            # 对付可能存在的 5秒盾
             sb.sleep(6) 
             if sb.is_element_present('iframe[src*="cloudflare"]'):
                 print("🛡️ 检测到 Cloudflare 盾，尝试破解...")
@@ -129,7 +149,6 @@ def process_account(account):
             print("等待登录表单渲染...")
             sb.wait_for_element('input[type="email"], input[name="email"]', timeout=20)
             
-            # 填写并提交
             sb.type('input[type="email"], input[name="email"]', email)
             sb.type('input[type="password"], input[name="password"]', password)
             sb.sleep(2)
