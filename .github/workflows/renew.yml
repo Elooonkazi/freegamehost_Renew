@@ -15,66 +15,74 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: 🛠️ 下载并启动 Xray (SOCKS5 + 强制域名嗅探)
+      - name: 🛠️ 下载并启动 sing-box (VLESS Reality 节点)
         run: |
-          echo "📥 下载最新版 Xray 内核..."
-          wget -q https://github.com/XTLS/Xray-core/releases/download/v1.8.24/Xray-linux-64.zip
-          unzip -q -o Xray-linux-64.zip -d xray_core
+          echo "📥 下载最新版 sing-box 内核..."
+          wget -q https://github.com/SagerNet/sing-box/releases/download/v1.9.0/sing-box-1.9.0-linux-amd64.tar.gz
+          tar -xzf sing-box-1.9.0-linux-amd64.tar.gz
+          mv sing-box-1.9.0-linux-amd64/sing-box .
           
-          echo "📝 生成 SOCKS5 嗅探配置文件..."
-          cat << 'EOF' > xray_core/config.json
+          echo "📝 生成 sing-box 配置文件..."
+          cat << 'EOF' > config.json
           {
+            "log": {
+              "level": "info"
+            },
             "inbounds": [
               {
-                "port": 10808,
+                "type": "mixed",
                 "listen": "127.0.0.1",
-                "protocol": "socks",
-                "sniffing": {
-                  "enabled": true,
-                  "destOverride": ["http", "tls"]
-                },
-                "settings": {
-                  "udp": true
-                }
+                "listen_port": 10808,
+                "sniff": true,
+                "sniff_override_destination": true
               }
             ],
             "outbounds": [
               {
-                "protocol": "vmess",
-                "settings": {
-                  "vnext": [
-                    {
-                      "address": "35.208.69.48",
-                      "port": 8880,
-                      "users": [
-                        {
-                          "id": "bd613279-ca0c-492c-90a1-3dec6d77bf95",
-                          "alterId": 0,
-                          "security": "auto"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                "streamSettings": {
-                  "network": "ws",
-                  "wsSettings": {
-                    "path": "bd613279-ca0c-492c-90a1-3dec6d77bf95-vm",
-                    "headers": {
-                      "Host": "www.bing.com"
-                    }
+                "type": "vless",
+                "tag": "proxy",
+                "server": "35.208.69.48",
+                "server_port": 35292,
+                "uuid": "bd613279-ca0c-492c-90a1-3dec6d77bf95",
+                "flow": "xtls-rprx-vision",
+                "tls": {
+                  "enabled": true,
+                  "server_name": "apple.com",
+                  "utls": {
+                    "enabled": true,
+                    "fingerprint": "chrome"
+                  },
+                  "reality": {
+                    "enabled": true,
+                    "public_key": "6pm6V2dVxBBzV_ApD7FuFZ0CKfLHggiVGKeI9SQxJEc",
+                    "short_id": "2a507ec5"
                   }
                 }
+              },
+              {
+                "type": "direct",
+                "tag": "direct"
               }
-            ]
+            ],
+            "route": {
+              "rules": [
+                {
+                  "ip_is_private": true,
+                  "outbound": "direct"
+                }
+              ],
+              "auto_detect_interface": true
+            }
           }
           EOF
           
-          cd xray_core
-          chmod +x xray
-          echo "🚀 后台启动 Xray (监听 10808 SOCKS5 端口)..."
-          nohup ./xray run -c config.json > xray.log 2>&1 &
+          chmod +x sing-box
+          echo "🚀 后台启动 sing-box (监听 10808 混合端口)..."
+          nohup ./sing-box run -c config.json > sing-box.log 2>&1 &
+          
+          echo "⏳ 等待内核启动..."
           sleep 5
+          cat sing-box.log
 
       - name: 🛠️ 安装系统依赖
         run: |
@@ -92,7 +100,7 @@ jobs:
           FGH_ACCOUNT: ${{ secrets.FGH_ACCOUNT }}
           TG_BOT: ${{ secrets.TG_BOT }}
         run: |
-          # 运行脚本 (使用 renew.py 默认的 SOCKS5 代理)
+          # 直接运行脚本 (使用 renew.py 中写死的 socks5://127.0.0.1:10808)
           xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" python renew.py
 
       - name: 📸 上传截图
