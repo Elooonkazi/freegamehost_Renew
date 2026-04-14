@@ -65,7 +65,7 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """真正的疯狗模式：无视一切前置条件，看见什么点什么！"""
+    """降维打击版：物理销毁广告画框 + 疯狗模式强点"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
@@ -91,14 +91,30 @@ def execute_renewal(sb, email):
             success = True
             break
 
-        # 2. 广告粉碎机 (无情连点器)
-        print("🧹 清理战场广告与弹窗...")
+        # ================= 🚨 终极广告屠杀引擎 🚨 =================
+        print("🧹 启动定向屠杀：清理隐形劫持层与弹窗广告...")
         sb.execute_script("""
-            var items = document.querySelectorAll('span, div, a, button');
-            for(var i=0; i<items.length; i++) {
-                var t = items[i].innerText || "";
-                if(t.trim() === 'Close' || t.trim() === 'CLOSE' || t.includes('Not Sell')) {
-                    try { items[i].click(); } catch(e){}
+            // 杀招 1：连根拔起所有非 CF 的第三方广告/劫持画框！
+            var frames = document.querySelectorAll('iframe');
+            for(var i=0; i<frames.length; i++) {
+                var src = (frames[i].src || "").toLowerCase();
+                // 只要不是 CF 相关的安全验证，全部销毁
+                if(!src.includes('cloudflare') && !src.includes('turnstile') && !src.includes('challenge')) {
+                    try { frames[i].remove(); } catch(e){}
+                }
+            }
+
+            // 杀招 2：精确点击并隐藏本网页内的所有 Close 按钮
+            var els = document.querySelectorAll('span, div, a, button');
+            for(var i=0; i<els.length; i++) {
+                var t = (els[i].innerText || "").toUpperCase().trim();
+                if(t === 'CLOSE' || t.includes('NOT SELL')) {
+                    try { els[i].click(); } catch(e){}
+                    try { els[i].style.display = 'none'; } catch(e){}
+                }
+                // 顺手把 START NOW 和 DOWNLOAD 这种流氓块也抹掉
+                if(t === 'START NOW' || t === 'DOWNLOAD EXTENSION') {
+                    try { els[i].style.display = 'none'; } catch(e){}
                 }
             }
         """)
@@ -116,33 +132,27 @@ def execute_renewal(sb, email):
                 }
             }
         """)
-        sb.sleep(5) # 必须等够 5 秒，让 CF 完全渲染出来！
+        sb.sleep(5) # 等 CF 从云端渲染出来
 
-        # ================= 🚨 终极核弹 🚨 =================
-        # 4. 盲放终极大招：CF 毁灭者 (绝不写 IF 语句判断，直接开大！)
+        # ================= 🚨 盲放 CF 毁灭者 🚨 =================
         print("🛡️ 无差别释放 CF 毁灭者...")
         
-        # 第一重火力：UC 官方外挂，全屏幕扫描验证码特征并模拟真人点击
+        # 第一重火力：UC 官方外挂真人模拟点击
         try:
             sb.uc_gui_click_captcha()
-            print("💥 UC 真人鼠标物理外挂已触发！")
         except:
             pass
             
         sb.sleep(2)
 
-        # 第二重火力：画框潜入刺杀！只进小尺寸画框，防大广告劫持
+        # 第二重火力：画框潜入刺杀（因为前面的屠杀引擎已经清空了杂鱼，现在剩下的 iframe 只有 CF 了！）
         try:
             iframes = sb.find_elements("iframe")
             for frame in iframes:
                 try:
-                    w = frame.size.get('width', 0)
-                    h = frame.size.get('height', 0)
-                    # CF 验证码通常是长条形，超过 500x500 的基本是纯广告遮罩，我们不进去
-                    if 10 < w < 500 and 10 < h < 500:
-                        sb.switch_to_frame(frame)
-                        sb.click('body', timeout=1) # 对着白板就是一枪
-                        sb.switch_to_default_content()
+                    sb.switch_to_frame(frame)
+                    sb.click('body', timeout=1) # 对着白板盲狙一枪
+                    sb.switch_to_default_content()
                 except:
                     sb.switch_to_default_content()
         except Exception as e:
