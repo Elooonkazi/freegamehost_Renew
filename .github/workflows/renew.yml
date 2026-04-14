@@ -5,7 +5,7 @@ on:
     - cron: '30 2,10,18 * * *'
 jobs:
   run_fgh_renew:
-    runs-on: windows-latest # 🌟 核心杀招：切换到 Windows 环境！
+    runs-on: windows-latest
     steps:
       - name: 📥 检出仓库
         uses: actions/checkout@v4
@@ -16,13 +16,14 @@ jobs:
           python-version: '3.10'
 
       - name: 🛠️ 下载并启动 Xray (Windows版 VLESS 节点)
+        shell: bash  # 🌟 强制使用 bash 避开 PowerShell 的多行文本语法冲突
         run: |
           echo "📥 下载 Windows 版 Xray 内核..."
-          Invoke-WebRequest -Uri "https://github.com/XTLS/Xray-core/releases/download/v1.8.24/Xray-windows-64.zip" -OutFile "Xray-windows-64.zip"
-          Expand-Archive -Path "Xray-windows-64.zip" -DestinationPath "xray_core" -Force
+          curl -L -o Xray-windows-64.zip "https://github.com/XTLS/Xray-core/releases/download/v1.8.24/Xray-windows-64.zip"
+          unzip -q -o Xray-windows-64.zip -d xray_core
           
           echo "📝 生成配置文件..."
-          $config = @"
+          cat << 'EOF' > xray_core/config.json
           {
             "inbounds": [
               {
@@ -66,20 +67,19 @@ jobs:
               }
             ]
           }
-"@
-          Set-Content -Path "xray_core\config.json" -Value $config
+          EOF
           
           cd xray_core
           echo "🚀 后台启动 Xray..."
-          Start-Process -FilePath ".\xray.exe" -ArgumentList "run -c config.json" -WindowStyle Hidden
-          Start-Sleep -Seconds 5
+          ./xray.exe run -c config.json &
+          sleep 5
 
       - name: 🐍 安装 Python 依赖
         run: |
           python -m pip install --upgrade pip
           pip install seleniumbase requests
           seleniumbase install chromedriver
-          # Windows 下不需要安装 xvfb 虚拟显示依赖，原生支持！
+          # Windows 下原生支持 GUI，无需 xvfb
 
       - name: 🚀 运行续期脚本
         env:
@@ -87,7 +87,7 @@ jobs:
           FGH_ACCOUNT: ${{ secrets.FGH_ACCOUNT }}
           TG_BOT: ${{ secrets.TG_BOT }}
         run: |
-          # 原汁原味运行，自动读取 renew.py 里的 socks5 代理
+          # 自动读取 renew.py 里的 socks5://127.0.0.1:10808 代理
           python renew.py
 
       - name: 📸 上传截图
