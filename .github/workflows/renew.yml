@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: 🛠️ 下载并启动 Xray (Argo 节点 + HTTP 透明代理)
+      - name: 🛠️ 下载并启动 Xray (真·Argo 节点 + HTTP 代理)
         run: |
           echo "📥 下载最新版 Xray 内核..."
           wget -q https://github.com/XTLS/Xray-core/releases/download/v1.8.24/Xray-linux-64.zip
@@ -57,7 +57,10 @@ jobs:
                     "fingerprint": "chrome"
                   },
                   "wsSettings": {
-                    "path": "/bd613279-ca0c-492c-90a1-3dec6d77bf95-vm"
+                    "path": "/bd613279-ca0c-492c-90a1-3dec6d77bf95-vm",
+                    "headers": {
+                      "Host": "www.visa.com.sg"
+                    }
                   }
                 }
               }
