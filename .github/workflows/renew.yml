@@ -15,70 +15,80 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: 🛠️ 下载并启动 Xray (带认证的 HTTP 代理模式)
+      - name: 🛠️ 部署虚拟网卡级别代理 (Sing-Box TUN 模式)
         shell: bash
         run: |
-          echo "📥 下载 Windows 版 Xray 内核..."
-          curl -L -o Xray-windows-64.zip "https://github.com/XTLS/Xray-core/releases/download/v1.8.24/Xray-windows-64.zip"
-          unzip -q -o Xray-windows-64.zip -d xray_core
+          echo "📥 下载 Sing-box 和 Wintun 虚拟网卡驱动..."
+          curl -L -o sing-box.zip "https://github.com/SagerNet/sing-box/releases/download/v1.9.0/sing-box-1.9.0-windows-amd64.zip"
+          unzip -q sing-box.zip
+          mv sing-box-1.9.0-windows-amd64/sing-box.exe .
           
-          echo "📝 生成认证代理配置..."
-          cat << 'EOF' > xray_core/config.json
+          curl -L -o wintun.zip "https://www.wintun.net/builds/wintun-0.14.1.zip"
+          unzip -q wintun.zip
+          cp wintun/bin/amd64/wintun.dll .
+          
+          echo "📝 生成智能路由的 TUN 配置文件..."
+          cat << 'EOF' > config.json
           {
             "log": {
-              "loglevel": "warning"
+              "level": "info"
             },
             "inbounds": [
               {
-                "port": 10808,
-                "listen": "127.0.0.1",
-                "protocol": "http",
-                "settings": {
-                  "accounts": [
-                    {
-                      "user": "fgh",
-                      "pass": "renew"
-                    }
-                  ]
-                }
+                "type": "tun",
+                "inet4_address": "172.19.0.1/30",
+                "auto_route": true,
+                "strict_route": false,
+                "stack": "system",
+                "sniff": true,
+                "sniff_override_destination": true
               }
             ],
             "outbounds": [
               {
-                "protocol": "vmess",
-                "settings": {
-                  "vnext": [
-                    {
-                      "address": "35.208.69.48",
-                      "port": 8880,
-                      "users": [
-                        {
-                          "id": "bd613279-ca0c-492c-90a1-3dec6d77bf95",
-                          "alterId": 0,
-                          "security": "auto"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                "streamSettings": {
-                  "network": "ws",
-                  "wsSettings": {
-                    "path": "/bd613279-ca0c-492c-90a1-3dec6d77bf95-vm",
-                    "headers": {
-                      "Host": "www.bing.com"
-                    }
+                "type": "vless",
+                "tag": "proxy",
+                "server": "35.208.69.48",
+                "server_port": 35292,
+                "uuid": "bd613279-ca0c-492c-90a1-3dec6d77bf95",
+                "flow": "xtls-rprx-vision",
+                "tls": {
+                  "enabled": true,
+                  "server_name": "apple.com",
+                  "utls": {
+                    "enabled": true,
+                    "fingerprint": "chrome"
+                  },
+                  "reality": {
+                    "enabled": true,
+                    "public_key": "6pm6V2dVxBBzV_ApD7FuFZ0CKfLHggiVGKeI9SQxJEc",
+                    "short_id": "2a507ec5"
                   }
                 }
+              },
+              {
+                "type": "direct",
+                "tag": "direct"
               }
-            ]
+            ],
+            "route": {
+              "rules": [
+                {
+                  "domain_suffix": [".freegamehost.xyz", "freegamehost.xyz", ".freegamehost.com", "freegamehost.com"],
+                  "outbound": "proxy"
+                },
+                {
+                  "outbound": "direct"
+                }
+              ],
+              "auto_detect_interface": true
+            }
           }
           EOF
           
-          cd xray_core
-          echo "🚀 后台启动 Xray..."
-          ./xray.exe run -c config.json &
-          sleep 5
+          echo "🚀 启动全局虚拟网卡接管..."
+          ./sing-box.exe run -c config.json &
+          sleep 8
 
       - name: 🐍 安装 Python 依赖
         shell: bash
@@ -87,21 +97,13 @@ jobs:
           pip install seleniumbase requests
           seleniumbase install chromedriver
 
-      - name: 🚀 运行续期脚本 (赋予耐心模式)
+      - name: 🚀 运行纯净无感续期脚本
         shell: bash
         env:
           PYTHONIOENCODING: utf-8
           FGH_ACCOUNT: ${{ secrets.FGH_ACCOUNT }}
           TG_BOT: ${{ secrets.TG_BOT }}
         run: |
-          echo "🔄 核心魔法：触发底层代理扩展模式..."
-          sed -i 's/socks5:\/\/127.0.0.1:10808/fgh:renew@127.0.0.1:10808/g' renew.py
-          
-          echo "⏳ 耐心魔法：给 Cloudflare 留出 20 秒的加载时间！"
-          sed -i 's/sb.sleep(2)/sb.sleep(20)/g' renew.py
-          sed -i 's/sb.sleep(5)/sb.sleep(15)/g' renew.py
-          
-          echo "🚀 开始运行..."
           python renew.py
 
       - name: 📸 上传截图
