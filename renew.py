@@ -65,7 +65,7 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """听从指挥：滑到中间，直接点！"""
+    """听从指挥：滑到中间，直接点！然后死盯 CF 验证码！"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
@@ -80,15 +80,11 @@ def execute_renewal(sb, email):
 
     print("听你的：正在往下滑动一点点...")
     
-    # 🌟 核心极简逻辑：让浏览器自己把那个紫色的按钮移到屏幕最正中间！
-    # scrollIntoView({block: "center"}) 这个原生方法绝对管用，无视一切花里胡哨的布局
     sb.execute_script("""
         var btns = document.querySelectorAll('button, div[class*="btn"], div[class*="rounded"]');
         for (var i = 0; i < btns.length; i++) {
             if (btns[i].innerText && btns[i].innerText.includes('HOURS')) {
-                // 1. 滑动到屏幕正中间（完美避开底部广告）
                 btns[i].scrollIntoView({block: "center"});
-                // 2. 直接点它！
                 btns[i].click();
                 break;
             }
@@ -97,14 +93,40 @@ def execute_renewal(sb, email):
     sb.sleep(3)
     print("✅ 成功滑到中间并点击了续期按钮！")
 
-    print("等待后续验证...")
-    sb.sleep(5)
-    if sb.is_element_present('iframe[src*="cloudflare"]'):
-        sb.uc_gui_click_captcha()
-        sb.sleep(4)
+    # ================= 🚨 最终 Boss 战：智能捕获 CF 验证码 🚨 =================
+    print("死盯 CF 验证码，等待其加载 (最多 15 秒)...")
+    try:
+        # 🌟 修复：强制等待包含 cloudflare 或 turnstile 的验证码框出现！
+        sb.wait_for_element('iframe[src*="cloudflare"], iframe[src*="turnstile"]', timeout=15)
+        print("🛡️ 捕捉到 CF 动作验证！正在执行破解...")
+        
+        # 第一重保险：使用 UC 模式内置的最强破解器
+        try:
+            sb.uc_gui_click_captcha()
+        except:
+            pass
+            
+        sb.sleep(3)
+        
+        # 第二重保险：如果它是顽固的内嵌版，我们直接手动切入 iframe 点击复选框！
+        if sb.is_element_present('iframe[src*="cloudflare"], iframe[src*="turnstile"]'):
+            print("执行物理穿透点击...")
+            try:
+                sb.switch_to_frame('iframe[src*="cloudflare"], iframe[src*="turnstile"]')
+                sb.click("body") # 直接点击验证码的框体
+                sb.switch_to_default_content()
+            except:
+                sb.switch_to_default_content()
 
-    # 尝试点击任何可能弹出的“确认”按钮
-    print("尝试点击弹出的确认按钮...")
+        sb.sleep(6) # 给 CF 转圈圈验证的时间
+        print("✅ CF 验证码破解指令执行完毕！")
+
+    except Exception:
+        print("未检测到 CF 验证组件，或已秒过。")
+
+    # =========================================================================
+
+    print("尝试点击可能存在的最终确认按钮...")
     sb.execute_script("""
         var btns = document.querySelectorAll('button');
         for (var i = 0; i < btns.length; i++) {
