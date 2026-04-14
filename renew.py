@@ -65,17 +65,18 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """终极必杀版：JS 像素级定位点击"""
+    """终极必杀版：原生 JS 像素级定位点击（彻底告别 jQuery）"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
 
-    # 🌟 第一步：暴力清理现场（强行关掉可能遮挡的弹窗）
+    # 🌟 第一步：暴力清理现场（使用原生 JS 强行关掉可能遮挡的弹窗）
     print("清理页面干扰元素...")
     sb.execute_script("""
         var items = document.querySelectorAll('div, section, span');
         for (var i = 0; i < items.length; i++) {
-            if (items[i].innerText.includes('Personal Information') || items[i].innerText.includes('Cookie')) {
+            var txt = items[i].innerText || items[i].textContent;
+            if (txt && (txt.includes('Personal Information') || txt.includes('Cookie'))) {
                 items[i].remove();
             }
         }
@@ -90,32 +91,37 @@ def execute_renewal(sb, email):
         send_tg_photo(f"⏳ FGH 服务器 41ed8b6e 续期冷却中。", cd_img)
         return True 
 
-    print("寻找 + 8 HOURS 按钮并执行 JS 强制点击...")
+    print("寻找 + 8 HOURS 按钮并执行原生 JS 强制点击...")
     
-    # 🌟 第二步：JS 强力搜索并触发点击
-    # 这段 JS 会遍历页面所有元素，只要文本里包含 "HOURS" 的按钮或链接，直接触发 click()
+    # 🌟 第二步：纯原生 JS 强力搜索并触发点击（没有任何 $ 符号）
     click_script = """
-        var btn = $("button:contains('HOURS'), a:contains('HOURS'), span:contains('HOURS'), div:contains('HOURS')").last();
-        if (btn.length > 0) {
-            btn[0].click();
-            return true;
+        var elements = document.querySelectorAll('button, a, [class*="btn"], div[class*="button"]');
+        var clicked = false;
+        // 倒序遍历，优先点击最内层的具体按钮
+        for (var i = elements.length - 1; i >= 0; i--) {
+            var txt = elements[i].innerText || elements[i].textContent;
+            if (txt && txt.includes('HOURS')) {
+                elements[i].click();
+                clicked = true;
+                break;
+            }
         }
-        return false;
+        return clicked;
     """
     
     success_click = sb.execute_script(click_script)
     
     if success_click:
-        print("✅ 已通过 JS 强制触发续期点击！")
+        print("✅ 已通过原生 JS 强制触发续期点击！")
     else:
-        # 如果 JS 没找到，尝试最后一次普通的选择器点击
+        # 兜底：如果 JS 没找到，尝试最后一次普通点击
         try:
-            sb.click('*:contains("HOURS")')
-            print("✅ 通过通用选择器点击成功！")
+            sb.click('button:contains("HOURS"), a:contains("HOURS")')
+            print("✅ 通过 SeleniumBase 选择器点击成功！")
         except:
             err_img = f"{email}_no_button.png"
             sb.save_screenshot(err_img)
-            send_tg_photo(f"⚠️ 续期失败：JS 和普通点击均未触及按钮。", err_img)
+            send_tg_photo(f"⚠️ 续期失败：原生 JS 和普通点击均未触及按钮。", err_img)
             return False
 
     # 🌟 第三步：处理后续可能弹出的 Cloudflare 动作验证
@@ -125,9 +131,17 @@ def execute_renewal(sb, email):
         sb.uc_gui_click_captcha()
         sb.sleep(4)
 
-    # 尝试点击任何可能弹出的“确认”按钮
+    # 尝试使用原生 JS 点击任何可能弹出的“确认”按钮
+    print("尝试点击可能存在的确认按钮...")
     sb.execute_script("""
-        $("button:contains('确认'), button:contains('Confirm'), button:contains('Yes')").click();
+        var btns = document.querySelectorAll('button, a, [class*="btn"]');
+        for (var i = 0; i < btns.length; i++) {
+            var txt = btns[i].innerText || btns[i].textContent;
+            if (txt && (txt.includes('确认') || txt.includes('Confirm') || txt.includes('Yes'))) {
+                btns[i].click();
+                break;
+            }
+        }
     """)
     sb.sleep(4)
 
