@@ -65,7 +65,7 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """终极通关版：主动雷达持续追踪 + 暴力破解 + 监控时间变化"""
+    """终极大彻大悟版：放弃雷达识别，直接全图火力覆盖盲打！"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
@@ -90,47 +90,51 @@ def execute_renewal(sb, email):
         }
     """)
     print("✅ 成功点击续期按钮！")
-    # 删除了愚蠢的 sleep(5)，直接进入主动雷达监控状态！
 
-    # ================= 🚨 最终 Boss 战：全频段主动雷达 🚨 =================
-    print("启动 CF 猎杀雷达，死盯屏幕 (最高监控 20 秒)...")
+    # ================= 🚨 最终 Boss 战：无差别盲打模式 🚨 =================
+    # 🌟 致命修复：彻底删掉所有坑爹的 wait_for_element 识别代码，改为物理硬等！
+    print("死等 8 秒，让 CF 验证码子弹飞一会儿...")
+    sb.sleep(8) 
+
+    print("放弃花里胡哨的识别，启动【全图盲打扫射】模式！")
     
-    # 🌟 致命修复 1：加上了 challenges 域名，这是 CF 最常用的发包域名
-    BROAD_CF_SELECTOR = 'iframe[src*="cloudflare"], iframe[src*="challenges"], iframe[src*="turnstile"], iframe[src*="cdn-cgi"]'
-    
+    # 🗡️ 杀招 A：UC 模式自带破解器盲放
+    print("-> 释放杀招 A: 原生 UC 破解器扫描...")
     try:
-        # 🌟 致命修复 2：主动持续监控！只要 20 秒内出现，立刻捕获！
-        sb.wait_for_element_present(BROAD_CF_SELECTOR, timeout=20)
-        print("🛡️ 雷达锁定白色的验证画框！开始处决...")
+        sb.uc_gui_click_captcha()
+    except:
+        pass
         
-        # 防止错位，强行把验证码也滚到屏幕中间
-        sb.execute_script(f"""
-            var cf = document.querySelector('{BROAD_CF_SELECTOR}');
-            if(cf) cf.scrollIntoView({{block: "center"}});
-        """)
-        sb.sleep(2)
+    sb.sleep(2)
 
-        # 🗡️ 杀招 A：原生 UC 鼠标物理模拟点击
-        print("-> 释放杀招 A: 原生真人物理点击...")
-        try:
-            sb.uc_gui_click_captcha()
-        except:
-            pass
-            
-        sb.sleep(3)
-
-        # 🗡️ 杀招 B：如果杀招 A 被闪避，直接切入画框贴脸开大！
-        print("-> 释放杀招 B: 深入画框内部强制点击...")
-        if sb.is_element_present(BROAD_CF_SELECTOR):
+    # 🗡️ 杀招 B：获取全图所有 iframe，挨个钻进去开枪！
+    print("-> 释放杀招 B: 遍历全图突入画框盲打...")
+    try:
+        # 获取页面上无论隐藏还是显示的所有 iframe
+        iframes = sb.find_elements("iframe")
+        print(f"🔍 全图扫描到 {len(iframes)} 个 iframe 画框，准备逐一突入...")
+        
+        for index, frame in enumerate(iframes):
             try:
-                sb.switch_to_frame(BROAD_CF_SELECTOR)
-                sb.click("body") # 直接猛击验证码框的身体
-                sb.switch_to_default_content()
-            except Exception as e:
-                sb.switch_to_default_content()
+                # 钻进画框内部
+                sb.switch_to_frame(frame)
+                # 对着画框的正中心（身体）或者复选框盲点一枪！
+                try:
+                    sb.click('.mark, label, input[type="checkbox"]', timeout=1)
+                except:
+                    sb.click('body', timeout=1)
                 
-    except Exception:
-        print("⚠️ 雷达监控 20 秒结束，未扫描到验证框 (可能被隐身或已被秒过)。")
+                print(f"🎯 成功突入第 {index+1} 个画框并完成内部盲打点击！")
+            except:
+                pass # 如果这个画框不能点（比如是广告），直接跳过
+            finally:
+                # 必须退回主页面，才能进下一个画框
+                sb.switch_to_default_content()
+    except Exception as e:
+        print(f"盲打过程发生异常 (可忽略): {e}")
+
+    print("给 CF 留出 8 秒钟的转圈确认时间...")
+    sb.sleep(8)
 
     # ================= ⏳ 监控时间变化 ⏳ =================
     print("死盯 TIME REMAINING，等待时间重置/增加...")
@@ -146,7 +150,7 @@ def execute_renewal(sb, email):
                 success = True
                 break
             else:
-                print(f"⌛ 时间尚未刷新，继续等待 CF 后台确认... ({i+1}/6)")
+                print(f"⌛ 时间尚未刷新，继续等待后台响应... ({i+1}/6)")
                 # 顺手点掉可能弹出的 Confirm 确认按钮
                 sb.execute_script("""
                     var btns = document.querySelectorAll('button');
