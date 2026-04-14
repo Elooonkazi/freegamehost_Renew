@@ -65,50 +65,76 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """独立的续期执行动作"""
+    """终极必杀版：JS 像素级定位点击"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
 
+    # 🌟 第一步：暴力清理现场（强行关掉可能遮挡的弹窗）
+    print("清理页面干扰元素...")
+    sb.execute_script("""
+        var items = document.querySelectorAll('div, section, span');
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].innerText.includes('Personal Information') || items[i].innerText.includes('Cookie')) {
+                items[i].remove();
+            }
+        }
+    """)
+    sb.sleep(2)
+
     page_text = sb.get_text('body').upper()
     if "RENEWAL COOLDOWN" in page_text and "HOURS" not in page_text:
-        print("⏳ 目标服务器处于冷却期。")
+        print("⏳ 确认处于冷却期。")
         cd_img = f"{email}_cooldown.png"
         sb.save_screenshot(cd_img)
-        send_tg_photo(f"⏳ FGH 服务器 41ed8b6e 续期冷却中，时间未到。", cd_img)
+        send_tg_photo(f"⏳ FGH 服务器 41ed8b6e 续期冷却中。", cd_img)
         return True 
 
-    print("寻找续期按钮 (+ 8 HOURS)...")
-    try:
-        # 🌟 终极去智障版点击：去掉所有的瞎滚代码，直接让它点击包含 HOURS 的任意元素
-        # SeleniumBase 发现元素后会自动把屏幕滚到那个按钮的位置！
-        sb.click('button:contains("HOURS"), a:contains("HOURS"), *:contains("HOURS")')
-        print("✅ 成功点击带有 HOURS 的续期按钮！")
-    except Exception as e:
-        err_img = f"{email}_no_button.png"
-        sb.save_screenshot(err_img)
-        send_tg_photo(f"⚠️ 续期失败：依然没有找到带有 HOURS 的续期按钮。", err_img)
-        return False
-
-    print("等待可能出现的盾或确认弹窗...")
-    sb.sleep(5)
+    print("寻找 + 8 HOURS 按钮并执行 JS 强制点击...")
     
+    # 🌟 第二步：JS 强力搜索并触发点击
+    # 这段 JS 会遍历页面所有元素，只要文本里包含 "HOURS" 的按钮或链接，直接触发 click()
+    click_script = """
+        var btn = $("button:contains('HOURS'), a:contains('HOURS'), span:contains('HOURS'), div:contains('HOURS')").last();
+        if (btn.length > 0) {
+            btn[0].click();
+            return true;
+        }
+        return false;
+    """
+    
+    success_click = sb.execute_script(click_script)
+    
+    if success_click:
+        print("✅ 已通过 JS 强制触发续期点击！")
+    else:
+        # 如果 JS 没找到，尝试最后一次普通的选择器点击
+        try:
+            sb.click('*:contains("HOURS")')
+            print("✅ 通过通用选择器点击成功！")
+        except:
+            err_img = f"{email}_no_button.png"
+            sb.save_screenshot(err_img)
+            send_tg_photo(f"⚠️ 续期失败：JS 和普通点击均未触及按钮。", err_img)
+            return False
+
+    # 🌟 第三步：处理后续可能弹出的 Cloudflare 动作验证
+    print("等待后续验证...")
+    sb.sleep(5)
     if sb.is_element_present('iframe[src*="cloudflare"]'):
-        print("遇到动作验证，正在破解...")
         sb.uc_gui_click_captcha()
         sb.sleep(4)
 
-    # 如果有 Confirm 弹窗就点，没有就不管
-    print("尝试点击可能存在的确认按钮...")
-    CONFIRM_SELECTORS = 'button:contains("确认"), button:contains("Confirm"), button:contains("Yes"), button[class*="success"]'
-    if sb.is_element_visible(CONFIRM_SELECTORS):
-        sb.click(CONFIRM_SELECTORS)
-        sb.sleep(4)
+    # 尝试点击任何可能弹出的“确认”按钮
+    sb.execute_script("""
+        $("button:contains('确认'), button:contains('Confirm'), button:contains('Yes')").click();
+    """)
+    sb.sleep(4)
 
-    print("🎉 续期操作执行完毕!")
+    print("🎉 任务终结！")
     success_img = f"{email}_success.png"
     sb.save_screenshot(success_img)
-    send_tg_photo(f"🎉 恭喜！FGH 服务器 41ed8b6e 续期操作成功！", success_img)
+    send_tg_photo(f"🎉 续期指令已发出！请检查截图确认状态。", success_img)
     return True
 
 # ================= 主流程 =================
