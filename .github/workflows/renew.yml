@@ -5,7 +5,7 @@ on:
     - cron: '30 2,10,18 * * *'
 jobs:
   run_fgh_renew:
-    runs-on: windows-latest # 🌟 核心杀招 1：真实的 Windows 环境
+    runs-on: windows-latest # 保持 Windows 真实环境
     steps:
       - name: 📥 检出仓库
         uses: actions/checkout@v4
@@ -15,49 +15,54 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: 🛠️ 下载并启动 Xray (HTTP 纯净代理模式)
-        shell: bash  # 强制使用 bash
+      - name: 🛠️ 下载并启动 Xray (纯净透明 VMess WS 模式)
+        shell: bash
         run: |
           echo "📥 下载 Windows 版 Xray 内核..."
           curl -L -o Xray-windows-64.zip "https://github.com/XTLS/Xray-core/releases/download/v1.8.24/Xray-windows-64.zip"
           unzip -q -o Xray-windows-64.zip -d xray_core
           
-          echo "📝 生成 HTTP 配置文件..."
+          echo "📝 生成最纯净的透明代理配置..."
           cat << 'EOF' > xray_core/config.json
           {
+            "log": {
+              "loglevel": "info"
+            },
             "inbounds": [
               {
                 "port": 10808,
                 "listen": "127.0.0.1",
-                "protocol": "http"  
+                "protocol": "socks",
+                "settings": {
+                  "udp": true
+                }
               }
             ],
             "outbounds": [
               {
-                "protocol": "vless",
+                "protocol": "vmess",
                 "settings": {
                   "vnext": [
                     {
                       "address": "35.208.69.48",
-                      "port": 35292,
+                      "port": 8880,
                       "users": [
                         {
                           "id": "bd613279-ca0c-492c-90a1-3dec6d77bf95",
-                          "encryption": "none",
-                          "flow": "xtls-rprx-vision"
+                          "alterId": 0,
+                          "security": "auto"
                         }
                       ]
                     }
                   ]
                 },
                 "streamSettings": {
-                  "network": "tcp",
-                  "security": "reality",
-                  "realitySettings": {
-                    "serverName": "apple.com",
-                    "fingerprint": "chrome",
-                    "publicKey": "6pm6V2dVxBBzV_ApD7FuFZ0CKfLHggiVGKeI9SQxJEc",
-                    "shortId": "2a507ec5"
+                  "network": "ws",
+                  "wsSettings": {
+                    "path": "/bd613279-ca0c-492c-90a1-3dec6d77bf95-vm",
+                    "headers": {
+                      "Host": "www.bing.com"
+                    }
                   }
                 }
               }
@@ -77,17 +82,15 @@ jobs:
           pip install seleniumbase requests
           seleniumbase install chromedriver
 
-      - name: 🚀 运行续期脚本 (动态替换为 HTTP 代理)
+      - name: 🚀 运行续期脚本 (原汁原味)
         shell: bash
         env:
           PYTHONIOENCODING: utf-8
           FGH_ACCOUNT: ${{ secrets.FGH_ACCOUNT }}
           TG_BOT: ${{ secrets.TG_BOT }}
         run: |
-          echo "🔄 核心魔法：将 Python 脚本中的 socks5 强制替换为 http 代理..."
-          sed -i 's/socks5:\/\/127.0.0.1/http:\/\/127.0.0.1/g' renew.py
-          
-          echo "🚀 开始运行..."
+          echo "🚀 开始运行自动化脚本..."
+          # 脚本会直接使用内部写好的 socks5://127.0.0.1:10808
           python renew.py
 
       - name: 📸 上传截图
