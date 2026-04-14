@@ -65,7 +65,7 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """听从指挥：滑到中间，直接点！然后死盯 CF 验证码！"""
+    """听从指挥：滑到中间，点续期，然后死磕白色验证框！"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
@@ -93,36 +93,38 @@ def execute_renewal(sb, email):
     sb.sleep(3)
     print("✅ 成功滑到中间并点击了续期按钮！")
 
-    # ================= 🚨 最终 Boss 战：智能捕获 CF 验证码 🚨 =================
+    # ================= 🚨 最终 Boss 战：暴力点击白色验证框 🚨 =================
     print("死盯 CF 验证码，等待其加载 (最多 15 秒)...")
     try:
-        # 🌟 修复：强制等待包含 cloudflare 或 turnstile 的验证码框出现！
-        sb.wait_for_element('iframe[src*="cloudflare"], iframe[src*="turnstile"]', timeout=15)
-        print("🛡️ 捕捉到 CF 动作验证！正在执行破解...")
+        # 🌟 核心修复：不挑食了！只要页面上有 iframe 弹出来，立刻抓住！
+        sb.wait_for_element('iframe', timeout=15)
+        print("🛡️ 捕捉到白色验证框！正在执行物理穿透点击...")
         
-        # 第一重保险：使用 UC 模式内置的最强破解器
+        # 强行切入验证码那个白色的独立画框
+        try:
+            sb.switch_to_frame('iframe')
+            print(">> 已进入验证框内部，正在点击白色区域...")
+            # 直接对着框的身体（body）点下去，触发验证！
+            sb.click("body") 
+            sb.sleep(2)
+            # 退出画框，回到主页面
+            sb.switch_to_default_content()
+        except Exception as e:
+            print(f"物理穿透点击出现偏差: {e}")
+            sb.switch_to_default_content()
+
+        # 兜底保险：再让内置的 UC 模式尝试自动识别破解一次
         try:
             sb.uc_gui_click_captcha()
         except:
             pass
-            
-        sb.sleep(3)
-        
-        # 第二重保险：如果它是顽固的内嵌版，我们直接手动切入 iframe 点击复选框！
-        if sb.is_element_present('iframe[src*="cloudflare"], iframe[src*="turnstile"]'):
-            print("执行物理穿透点击...")
-            try:
-                sb.switch_to_frame('iframe[src*="cloudflare"], iframe[src*="turnstile"]')
-                sb.click("body") # 直接点击验证码的框体
-                sb.switch_to_default_content()
-            except:
-                sb.switch_to_default_content()
 
-        sb.sleep(6) # 给 CF 转圈圈验证的时间
-        print("✅ CF 验证码破解指令执行完毕！")
+        print("给 CF 留出转圈圈验证的时间...")
+        sb.sleep(6) 
+        print("✅ CF 验证框点击指令已执行！")
 
-    except Exception:
-        print("未检测到 CF 验证组件，或已秒过。")
+    except Exception as e:
+        print(f"未能抓到验证框报错 (可能已秒过): {e}")
 
     # =========================================================================
 
