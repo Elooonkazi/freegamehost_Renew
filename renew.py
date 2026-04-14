@@ -65,7 +65,7 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """通关版：自动粉碎广告 + 精准爆头 CF + 智能监控"""
+    """永不妥协：疯狗模式状态机轮询 (无视一切广告、弹窗、劫持)"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
@@ -78,114 +78,106 @@ def execute_renewal(sb, email):
         send_tg_photo(f"⏳ FGH 服务器 41ed8b6e 续期冷却中。", cd_img)
         return True 
 
-    print("往下滚动并点击续期按钮...")
-    sb.execute_script("""
-        var btns = document.querySelectorAll('button, div[class*="btn"], div[class*="rounded"]');
-        for (var i = 0; i < btns.length; i++) {
-            if (btns[i].innerText && btns[i].innerText.includes('HOURS')) {
-                btns[i].scrollIntoView({block: "center"});
-                btns[i].click();
-                break;
-            }
-        }
-    """)
-    print("✅ 成功点击续期按钮！等待 CF 加载...")
-    sb.sleep(6) 
-
-    # ================= 🚨 广告粉碎机 🚨 =================
-    print("启动广告粉碎机，清理可能弹出的遮罩...")
-    sb.execute_script("""
-        // 1. 自动点击广告右上角的 Close 按钮
-        var items = document.querySelectorAll('span, div, a, button');
-        for(var i=0; i<items.length; i++) {
-            var t = items[i].innerText || "";
-            if(t.trim() === 'Close' || t.trim() === 'CLOSE') {
-                try { items[i].click(); } catch(e){}
-            }
-        }
-        // 2. 物理毁灭广告遮罩层
-        var divs = document.querySelectorAll('div');
-        for(var i=0; i<divs.length; i++) {
-            var t = divs[i].innerText || "";
-            if(t.includes('DOWNLOAD EXTENSION') && t.includes('2 Easy Steps')) {
-                divs[i].remove();
-            }
-        }
-    """)
-    sb.sleep(2)
-
-    # ================= 🚨 CF 精确制导 🚨 =================
-    print("锁定 CF 验证码，执行精准打击...")
-    
-    # 🗡️ 杀招 A：UC 原生物理点击
-    print("-> 释放杀招 A: UC 真人鼠标点击...")
-    try:
-        sb.uc_gui_click_captcha()
-    except:
-        pass
-    sb.sleep(3)
-
-    # 🗡️ 杀招 B：只找名字带 Cloudflare 的框，不再扫射无辜广告
-    print("-> 释放杀招 B: 精确突入 CF 画框...")
-    cf_selectors = [
-        'iframe[src*="cloudflare"]',
-        'iframe[src*="turnstile"]',
-        'iframe[title*="Cloudflare"]',
-        'iframe[src*="challenge"]'
-    ]
-    
-    for sel in cf_selectors:
-        if sb.is_element_present(sel):
-            print(f"🎯 锁定 CF 目标 ({sel})，突入中...")
-            try:
-                sb.switch_to_frame(sel)
-                sb.click('body', timeout=2) 
-                sb.switch_to_default_content()
-                print("💥 精准爆头完成！")
-                break # 打完就跑，绝不逗留
-            except:
-                sb.switch_to_default_content()
-
-    print("给 CF 留出 6 秒钟的转圈确认时间...")
-    sb.sleep(6)
-
-    # ================= ⏳ 监控时间变化 ⏳ =================
-    print("死盯 TIME REMAINING，等待时间重置/增加...")
+    print("🔄 开启终极火力覆盖循环 (最多尝试 8 波攻势)...")
     success = False
-    
-    for i in range(6): 
-        sb.sleep(3)
-        try:
-            # 循环内持续粉碎广告和点击确认按钮
-            sb.execute_script("""
-                var items = document.querySelectorAll('span, div, a, button');
-                for(var j=0; j<items.length; j++) {
-                    var t = items[j].innerText || "";
-                    t = t.trim();
-                    if(t === 'Close' || t === 'CLOSE' || t.includes('确认') || t.includes('Confirm') || t.includes('Yes')) {
-                        try { items[j].click(); } catch(e){}
-                    }
+
+    for attempt in range(8):
+        print(f"\n--- 🚀 第 {attempt + 1} 波攻势 ---")
+
+        # 1. 检查是否已经彻底胜利 (目标按钮消失)
+        current_text = sb.get_text('body').upper()
+        if "HOURS" not in current_text or "SUCCESS" in current_text:
+            print("✅ 监控到面板状态已刷新！+8 HOURS 按钮已消失，时间已成功增加！")
+            success = True
+            break
+
+        # 2. 广告粉碎机 (每次攻击前先扫清障碍)
+        print("🧹 清理战场广告与遮罩...")
+        sb.execute_script("""
+            // 疯狂点击页面上所有的 Close 按钮
+            var items = document.querySelectorAll('span, div, a, button');
+            for(var i=0; i<items.length; i++) {
+                var t = items[i].innerText || "";
+                if(t.trim() === 'Close' || t.trim() === 'CLOSE') {
+                    try { items[i].click(); } catch(e){}
                 }
-            """)
-            
-            current_text = sb.get_text('body').upper()
-            if "HOURS" not in current_text or "SUCCESS" in current_text:
-                print(f"✅ 面板状态已刷新！+8 HOURS 按钮消失，时间已增加！(第 {i+1} 次检查)")
-                success = True
-                break
-            else:
-                print(f"⌛ 时间尚未刷新，继续等待后台响应... ({i+1}/6)")
-        except:
-            pass
+            }
+            // 直接把那个黑心的 DOWNLOAD 广告物理删除
+            var divs = document.querySelectorAll('div');
+            for(var i=0; i<divs.length; i++) {
+                var t = divs[i].innerText || "";
+                if(t.includes('DOWNLOAD EXTENSION') || t.includes('2 Easy Steps')) {
+                    divs[i].remove();
+                }
+            }
+        """)
+        sb.sleep(1)
+
+        # 3. 寻找并点击续期按钮 (即使前几次被劫持，这一轮也会继续点)
+        print("🎯 锁定并点击续期按钮 (+8 HOURS)...")
+        sb.execute_script("""
+            var btns = document.querySelectorAll('button, div[class*="btn"], div[class*="rounded"]');
+            for (var i = 0; i < btns.length; i++) {
+                if (btns[i].innerText && btns[i].innerText.includes('HOURS')) {
+                    btns[i].scrollIntoView({block: "center"});
+                    btns[i].click();
+                    break;
+                }
+            }
+        """)
+        sb.sleep(4) # 给 CF 弹窗留出加载时间
+
+        # 4. 扫描并处理 CF
+        print("🛡️ 雷达扫描 CF 验证码...")
+        cf_selectors = [
+            'iframe[src*="turnstile"]',
+            'iframe[src*="cloudflare"]',
+            'iframe[src*="challenge"]'
+        ]
+        cf_found = False
+        for sel in cf_selectors:
+            if sb.is_element_present(sel):
+                cf_found = True
+                print(f"💥 发现 CF 目标，突入爆头！({sel})")
+                
+                # 先尝试原生点击器
+                try: sb.uc_gui_click_captcha()
+                except: pass
+                
+                # 再尝试物理穿透
+                try:
+                    sb.switch_to_frame(sel)
+                    sb.click('body', timeout=2)
+                    sb.switch_to_default_content()
+                except:
+                    sb.switch_to_default_content()
+                break # 打完当前这个就退出 CF 扫描
+        
+        if cf_found:
+            print("⏳ 破甲弹已发射，等待 CF 服务器验证 (5秒)...")
+            sb.sleep(5)
+
+        # 5. 点击所有确认按钮
+        print("✅ 尝试确认最终授权弹窗...")
+        sb.execute_script("""
+            var btns = document.querySelectorAll('button');
+            for (var i = 0; i < btns.length; i++) {
+                var txt = btns[i].innerText || btns[i].textContent;
+                if (txt && (txt.includes('确认') || txt.includes('Confirm') || txt.includes('Yes') || txt.includes('Renew'))) {
+                    btns[i].click();
+                }
+            }
+        """)
+        sb.sleep(3) # 本波攻势结束，稍作停顿进入下一波
 
     if success:
-        print("🎉 续期彻底成功！")
+        print("🎉 漫长战役终结，续期彻底成功！")
     else:
-        print("⚠️ 监控超时，时间似乎没有增加，可能是 CF 验证失败了。")
+        print("⚠️ 8 波攻势结束，时间依然没有增加。可能面板 API 宕机或防弹盾过厚。")
 
     final_img = f"{email}_final_result.png"
     sb.save_screenshot(final_img)
-    send_tg_photo(f"📸 续期流程结束，这是最终的现场快照。", final_img)
+    send_tg_photo(f"📸 续期流程结束，最终现场快照。", final_img)
     return success
 
 # ================= 主流程 =================
