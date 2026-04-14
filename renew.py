@@ -26,8 +26,8 @@ def send_tg_msg(msg):
 
 # ================= 核心魔法：注入你的 VIP 通行证 =================
 def inject_vip_cookies(sb):
-    # 这是你本地抓取的真实 Cookie。注意：Cookie 的有效域必须是 panel.freegamehost.com
-    domain = ".freegamehost.com" 
+    # 🌟 关键修复：域名后缀改为 .xyz
+    domain = ".freegamehost.xyz" 
     
     cookies = [
         {
@@ -66,23 +66,23 @@ def process_account(account):
         try:
             sb.driver.set_window_size(1920, 1080)
             
-            # 第一步：先打开一个 404 页面或者根目录，仅仅是为了让浏览器获得网站的 Domain，这样才能注入 Cookie
+            # 第一步：先打开一个目标网站的 404 页面，获得 .xyz 的域名环境
             print("正在获取域名许可...")
-            sb.uc_open_with_reconnect("https://panel.freegamehost.com/robots.txt", 10)
+            sb.uc_open_with_reconnect("https://panel.freegamehost.xyz/robots.txt", 10) # 🌟 修复为 .xyz
             sb.sleep(2)
             
             # 第二步：强行塞入登录凭证
             print("正在注入登录状态...")
             inject_vip_cookies(sb)
             
-            # 第三步：拿着通行证，直接空降到面板主页或服务器列表页！
+            # 第三步：拿着通行证，直接空降到面板主页
             print("VIP 免密直达服务器面板...")
-            sb.uc_open_with_reconnect("https://panel.freegamehost.com/", 10)
+            sb.uc_open_with_reconnect("https://panel.freegamehost.xyz/", 10) # 🌟 修复为 .xyz
             sb.sleep(5)
 
             # 检查是否成功骗过了网站
             if sb.is_element_visible('a[href="/admin"]') or "panel" in sb.get_current_url():
-                print("✅ 免密登录成功! https://panel.freegamehost.com/")
+                print("✅ 免密登录成功! https://panel.freegamehost.xyz/")
             else:
                 print("❌ Cookie 可能已失效，被踢回登录页。")
                 sb.save_screenshot(f"{email}_login_failed.png")
