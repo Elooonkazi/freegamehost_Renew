@@ -15,14 +15,14 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: 🛠️ 下载并启动 Xray (终极解法：HTTP入站 + VMess WS出站)
+      - name: 🛠️ 下载并启动 Xray (带认证的 HTTP 代理模式)
         shell: bash
         run: |
           echo "📥 下载 Windows 版 Xray 内核..."
           curl -L -o Xray-windows-64.zip "https://github.com/XTLS/Xray-core/releases/download/v1.8.24/Xray-windows-64.zip"
           unzip -q -o Xray-windows-64.zip -d xray_core
           
-          echo "📝 生成完美透传配置..."
+          echo "📝 生成认证代理配置..."
           cat << 'EOF' > xray_core/config.json
           {
             "log": {
@@ -32,7 +32,15 @@ jobs:
               {
                 "port": 10808,
                 "listen": "127.0.0.1",
-                "protocol": "http" 
+                "protocol": "http",
+                "settings": {
+                  "accounts": [
+                    {
+                      "user": "fgh",
+                      "pass": "renew"
+                    }
+                  ]
+                }
               }
             ],
             "outbounds": [
@@ -79,15 +87,15 @@ jobs:
           pip install seleniumbase requests
           seleniumbase install chromedriver
 
-      - name: 🚀 运行续期脚本 (强切 HTTP 代理)
+      - name: 🚀 运行续期脚本 (启用浏览器代理插件模式)
         shell: bash
         env:
           PYTHONIOENCODING: utf-8
           FGH_ACCOUNT: ${{ secrets.FGH_ACCOUNT }}
           TG_BOT: ${{ secrets.TG_BOT }}
         run: |
-          echo "🔄 核心魔法：将 Python 脚本中的 SOCKS5 强制替换为 HTTP 代理..."
-          sed -i 's/socks5:\/\/127.0.0.1/http:\/\/127.0.0.1/g' renew.py
+          echo "🔄 核心魔法：强制 SeleniumBase 识别账号密码，触发底层代理扩展模式！"
+          sed -i 's/socks5:\/\/127.0.0.1:10808/fgh:renew@127.0.0.1:10808/g' renew.py
           
           echo "🚀 开始运行..."
           python renew.py
