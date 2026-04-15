@@ -65,7 +65,7 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """上帝模式：强行抓取 CF 验证码并置顶居中，纯物理处决！"""
+    """内窥镜战术：无视所有外部伪装，直接钻入画框查核心！"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
@@ -78,7 +78,7 @@ def execute_renewal(sb, email):
         send_tg_photo(f"⏳ FGH 服务器 41ed8b6e 续期冷却中。", cd_img)
         return True 
 
-    print("🔄 开启上帝模式循环 (最多尝试 8 波)...")
+    print("🔄 开启内窥镜扫荡循环 (最多尝试 8 波)...")
     success = False
 
     for attempt in range(8):
@@ -90,17 +90,24 @@ def execute_renewal(sb, email):
             success = True
             break
 
-        # 1. 寻找并点击续期按钮
-        print("🎯 寻找并点击续期按钮 (+8 HOURS)...")
+        # ================= 🚨 终极广告焚化炉 🚨 =================
+        print("🧹 清理战场广告与白框尸体...")
+        # 这一版直接 remove() 父元素，彻底粉碎，绝不留下白色遮罩尸体！
         sb.execute_script("""
-            // 顺手隐藏一下烦人的大广告，免得挡住我们的视线
-            var divs = document.querySelectorAll('div');
-            for(var i=0; i<divs.length; i++) {
-                if(divs[i].innerText.includes('DOWNLOAD') || divs[i].innerText.includes('START NOW')) {
-                    try { divs[i].style.display = 'none'; } catch(e){}
+            var els = document.querySelectorAll('*');
+            for(var i=0; i<els.length; i++) {
+                var t = (els[i].innerText || "").toUpperCase().trim();
+                if(t === 'START NOW' || t === 'DOWNLOAD EXTENSION' || t === 'CLOSE' || t.includes('NOT SELL')) {
+                    try { els[i].parentElement.remove(); } catch(e){}
+                    try { els[i].remove(); } catch(e){}
                 }
             }
-            
+        """)
+        sb.sleep(1)
+
+        # 3. 寻找并点击续期按钮
+        print("🎯 锁定并点击续期按钮 (+8 HOURS)...")
+        sb.execute_script("""
             var btns = document.querySelectorAll('button, div[class*="btn"], div[class*="rounded"]');
             for (var i = 0; i < btns.length; i++) {
                 if (btns[i].innerText && btns[i].innerText.includes('HOURS')) {
@@ -110,67 +117,52 @@ def execute_renewal(sb, email):
                 }
             }
         """)
-        sb.sleep(5) # 必须等够时间，让 CF 验证码从网络加载出来
+        sb.sleep(6) # 必须等够 6 秒，让 CF 验证码有充足的时间弹出来
 
-        # ================= 🚨 上帝之手：强行提取 CF 并置顶居中 🚨 =================
-        print("🛡️ 启动上帝之手：提取 CF 验证码并强行置于屏幕正中央！")
+        # ================= 🚨 内窥镜刺杀系统 🚨 =================
+        print("🛡️ 启动内窥镜：钻入所有画框寻找 CF 核心组件...")
         
-        sb.execute_script("""
-            var frames = document.querySelectorAll('iframe');
-            for(var i=0; i<frames.length; i++) {
-                var rect = frames[i].getBoundingClientRect();
-                // 只要尺寸是 300x65 附近的，绝对是 CF 验证码 (排除所有的巨型广告和隐藏探针)
-                if (rect.width > 250 && rect.width < 350 && rect.height > 50 && rect.height < 100) {
-                    frames[i].id = "god_mode_cf"; // 打上专属标记
-                    frames[i].style.position = 'fixed';
-                    frames[i].style.top = '50%';
-                    frames[i].style.left = '50%';
-                    frames[i].style.transform = 'translate(-50%, -50%)';
-                    frames[i].style.zIndex = '2147483647'; // 最高层级，突破天际，没有任何东西能挡住它
-                    frames[i].style.boxShadow = '0 0 0 9999px rgba(0,0,0,0.8)'; // 给周围全部打上黑色遮罩，凸显验证码
-                    frames[i].style.border = '3px solid #00FF00'; // 加上绿色瞄准框
-                    frames[i].style.display = 'block';
-                } else {
-                    // 其他所有 iframe 全部物理隐藏，防止任何干扰
-                    frames[i].style.display = 'none';
-                }
-            }
-        """)
-        sb.sleep(2) # 缓冲一下动画渲染
+        # 杀招 A：先让 UC 外挂盲扫一波
+        try:
+            sb.uc_gui_click_captcha()
+        except:
+            pass
+        sb.sleep(2)
 
-        # 检查验证码是否成功被我们抓到了屏幕中央
-        cf_exists = sb.is_element_present("#god_mode_cf")
-        if cf_exists:
-            print("🎯 CF 验证码已被强行拖至屏幕中央！执行真人物理处决...")
-            
-            # 杀招 A：纯正物理鼠标点击（引入 ActionChains）
-            try:
-                from selenium.webdriver.common.action_chains import ActionChains
-                cf_el = sb.driver.find_element("css selector", "#god_mode_cf")
-                # 真实的鼠标移动到元素正中心，然后按下左键！这完全模拟了真人的操作。
-                ActionChains(sb.driver).move_to_element(cf_el).click().perform()
-                print("-> 物理鼠标左键精准狙击完毕！")
-            except Exception as e:
-                print(f"物理鼠标狙击发生偏差: {e}")
+        # 杀招 B：破门查水表 (The Ultimate Fallback)
+        try:
+            iframes = sb.find_elements("iframe")
+            cf_found = False
+            for frame in iframes:
+                try:
+                    # 不管三七二十一，直接钻进去！
+                    sb.switch_to_frame(frame)
+                    
+                    # 在画框内部寻找 CF 特有的器官标签
+                    if sb.is_element_present('.mark, .ctp-checkbox-label, input[type="checkbox"], #challenge-stage'):
+                        print("💥 确认目标！已在画框内部发现 CF 核心，执行贴脸爆头！")
+                        cf_found = True
+                        
+                        # 确保它在可视范围内
+                        sb.execute_script("document.body.scrollIntoView({block: 'center'});")
+                        sb.sleep(1)
+                        
+                        # 对准复选框开火
+                        try: sb.click('.mark, .ctp-checkbox-label, input[type="checkbox"]', timeout=1)
+                        except: sb.click('body', timeout=1)
+                        
+                    # 查完退出画框
+                    sb.switch_to_default_content()
+                    
+                    if cf_found:
+                        break # 击毙一个就收工，不再查后面的画框了
+                except Exception as inner_e:
+                    sb.switch_to_default_content()
+        except Exception as e:
+            print(f"画框遍历异常: {e}")
 
-            sb.sleep(2)
-
-            # 杀招 B：内置工具扫尾
-            try: sb.uc_gui_click_captcha()
-            except: pass
-
-            # 杀招 C：钻入画框盲点
-            try:
-                sb.switch_to_frame("#god_mode_cf")
-                sb.click('body', timeout=1)
-                sb.switch_to_default_content()
-            except:
-                sb.switch_to_default_content()
-        else:
-            print("⚠️ 本轮未扫描到尺寸匹配的 CF 画框，可能在加载或已被秒过。")
-
-        print("⏳ 破甲弹已倾泻，等待面板后台转圈验证 (5秒)...")
-        sb.sleep(5)
+        print("⏳ 破甲弹已倾泻，等待 CF 服务器转圈验证 (6秒)...")
+        sb.sleep(6)
 
         # 5. 点击可能出现的最终确认
         print("✅ 尝试确认可能弹出的最终授权框...")
