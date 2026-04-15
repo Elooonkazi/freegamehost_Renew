@@ -65,7 +65,7 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """降维打击无死角版：无视换行符伪装，绝对物理除草！"""
+    """真理说服版：彻底放弃 JS 点击，启用纯物理光标霰弹枪火力覆盖！"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
@@ -78,17 +78,14 @@ def execute_renewal(sb, email):
         send_tg_photo(f"⏳ FGH 服务器 41ed8b6e 续期冷却中。", cd_img)
         return True 
 
-    print("🔄 开启最终核平循环 (最多尝试 8 波)...")
+    print("🔄 开启最终物理强袭循环 (最多尝试 8 波)...")
     success = False
 
-    # 🌟 核心武器：无死角战术清理炸弹
+    # 之前表现完美的战场净化程序（保持不变）
     cleansing_js = """
-        // 1. 物理删除所有巨型 iframe (彻底消灭第三方嵌入广告)
         document.querySelectorAll('iframe').forEach(f => {
             if (f.offsetWidth > 380 || f.offsetHeight > 380) f.remove();
         });
-        
-        // 2. 暴力抹除原生流氓元素 (抽干所有空格和换行符，无视排版伪装！)
         document.querySelectorAll('*').forEach(e => {
             let t = (e.innerText || '').toUpperCase().replace(/\\s+/g, '');
             if(t.includes('DOWNLOADEXTENSION') || t.includes('STARTNOW') || t.includes('TRUSTEDSPOT') || t.includes('2EASYSTEPS')) {
@@ -100,8 +97,6 @@ def execute_renewal(sb, email):
                 try{ e.click(); e.style.display = 'none'; }catch(err){}
             }
         });
-        
-        // 3. 终极底线：隐藏所有全屏的高层级幽灵遮罩层 (破除透明防弹玻璃)
         document.querySelectorAll('div').forEach(d => {
             let z = window.getComputedStyle(d).zIndex;
             if (z !== 'auto' && parseInt(z) > 1000) {
@@ -121,12 +116,10 @@ def execute_renewal(sb, email):
             success = True
             break
 
-        # 战前清理：先把页面上现存的广告扫干净
-        print("🧹 战前清理：引爆清除炸弹...")
+        print("🧹 战前清理：粉碎一切视觉遮挡...")
         sb.execute_script(cleansing_js)
         sb.sleep(1)
 
-        # 触发陷阱：点击续期按钮
         print("🎯 锁定并点击续期按钮 (+8 HOURS)...")
         sb.execute_script("""
             var btns = document.querySelectorAll('button, div[class*="btn"], div[class*="rounded"]');
@@ -139,57 +132,71 @@ def execute_renewal(sb, email):
             }
         """)
         
-        # 故意等待 4 秒，让点击触发的延时广告或 CF 完全弹出来
-        print("⏳ 等待 4 秒，诱导敌方延时弹窗...")
+        print("⏳ 等待 4 秒，诱导敌方弹窗...")
         sb.sleep(4) 
 
-        # 战间清理：广告弹出来了？那就再炸一次！
-        print("🧹 战间清理：秒杀因点击而弹出的护盾...")
+        print("🧹 战间清理：秒杀反击护盾...")
         sb.execute_script(cleansing_js)
         sb.sleep(1)
 
-        # ================= 🚨 内窥镜刺杀系统 🚨 =================
-        print("🛡️ 护盾已破！启动内窥镜寻找并刺杀 CF 核心...")
+        # ================= 🚨 物理坐标霰弹枪系统 🚨 =================
+        print("🛡️ 确认护盾清除！提取 CF 验证码执行物理枪决...")
         
         try:
+            # 引入操作系统级别的物理鼠标控制器
+            from selenium.webdriver.common.action_chains import ActionChains
+            
             iframes = sb.find_elements("iframe")
             cf_found = False
             for frame in iframes:
                 try:
                     w = frame.size.get('width', 0)
                     h = frame.size.get('height', 0)
-                    # 经历过两轮大尺寸清除，存活下来的只可能是小画框
+                    # 经历过清场后，剩下的小画框必然是 CF
                     if 10 < w < 380 and 10 < h < 380:
+                        cf_found = True
+                        print(f"💥 锁定目标！画框尺寸 {w}x{h}，启动【物理霰弹枪】盲射...")
                         sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", frame)
-                        sb.sleep(0.5)
+                        sb.sleep(1)
                         
-                        sb.switch_to_frame(frame)
-                        # 在画框内部寻找 CF 专有器官
-                        if sb.is_element_present('.mark, .ctp-checkbox-label, input[type="checkbox"], #challenge-stage'):
-                            print("💥 确认目标！已在画框内部发现 CF 核心，执行贴脸爆头！")
-                            cf_found = True
+                        # 第一重火力：官方物理外挂扫射
+                        try: sb.uc_gui_click_captcha()
+                        except: pass
+                        sb.sleep(1)
+
+                        # 🔥 致命武器：纯鼠标坐标偏移连发 (专门击碎 CF 的 JS 免疫装甲)
+                        try:
+                            actions = ActionChains(sb.driver)
+                            # 动态计算左半部分坐标，不管复选框藏在左边哪个像素，通通覆盖！
+                            offset_1 = -int(w * 0.4)  # 偏左边缘
+                            offset_2 = -int(w * 0.3)  # 偏左四分之一
+                            offset_3 = -int(w * 0.2)  # 偏左三分之一
                             
-                            # 没有了遮挡，这次的物理点击绝对能爆头
-                            try: sb.click('.mark, .ctp-checkbox-label, input[type="checkbox"]', timeout=1)
-                            except: sb.click('body', timeout=1)
+                            actions.move_to_element_with_offset(frame, offset_1, 0).click().pause(0.5)
+                            actions.move_to_element_with_offset(frame, offset_2, 0).click().pause(0.5)
+                            actions.move_to_element_with_offset(frame, offset_3, 0).click().perform()
+                            print("-> 物理霰弹枪横向扫射完毕，完美覆盖复选框区域！")
+                        except Exception as e:
+                            print(f"霰弹枪卡壳: {e}")
                             
-                        sb.switch_to_default_content()
-                        
-                        if cf_found:
-                            break # 杀完一个就收工
+                        # 第三重火力：内部暴力开火兜底
+                        try:
+                            sb.switch_to_frame(frame)
+                            body = sb.driver.find_element("css selector", "body")
+                            ActionChains(sb.driver).move_to_element(body).click().perform()
+                            sb.switch_to_default_content()
+                        except:
+                            sb.switch_to_default_content()
+
+                        break # 击毙当前目标即收队
                 except Exception as inner_e:
-                    sb.switch_to_default_content()
+                    pass
         except Exception as e:
-            print(f"画框遍历异常: {e}")
+            print(f"搜寻画框异常: {e}")
 
-        # 顺手补一发原生外挂兜底
-        try: sb.uc_gui_click_captcha()
-        except: pass
-
-        print("⏳ 破甲弹已倾泻，等待 CF 服务器转圈验证 (6秒)...")
+        print("⏳ 弹夹已清空，等待 CF 服务器响应 (6秒)...")
         sb.sleep(6)
 
-        # 点击可能出现的最终确认
         print("✅ 尝试确认可能弹出的最终授权框...")
         sb.execute_script("""
             var btns = document.querySelectorAll('button');
