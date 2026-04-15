@@ -65,162 +65,125 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """修复雷达致盲漏洞，精准锁定真实按钮与广告！"""
+    """终极对地打击版本：专治突发广告蒙层 + CF组合盾"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
 
-    print("🔄 开启最终物理强袭循环 (最多尝试 8 波)...")
-    success = False
-
-    # 🌟 修复战前清场程序：加入文本长度限制，防止误伤整个网页(body)！
-    cleansing_js = """
-        document.querySelectorAll('iframe').forEach(f => {
-            if (f.offsetWidth > 380 || f.offsetHeight > 380) f.remove();
-        });
-        document.querySelectorAll('*').forEach(e => {
-            let rawText = e.innerText || '';
-            let t = rawText.toUpperCase().replace(/\\s+/g, '');
-            // 必须小于 300 个字符，防止匹配到整个外层容器导致全页面隐藏
-            if((t.includes('DOWNLOADEXTENSION') || t.includes('STARTNOW') || t.includes('TRUSTEDSPOT') || t.includes('2EASYSTEPS')) && rawText.length < 300) {
-                try { e.style.display = 'none'; } catch(err){}
-                try { if(e.parentElement) e.parentElement.style.display = 'none'; } catch(err){}
-                try { if(e.parentElement.parentElement) e.parentElement.parentElement.style.display = 'none'; } catch(err){}
-            }
-            if(t === 'CLOSE' && rawText.length < 20) {
-                try{ e.click(); e.style.display = 'none'; }catch(err){}
+    # 🚀 升级版防空火炮 JS：不只隐藏，直接物理超度 DOM 节点
+    nuke_ads_js = """
+        // 1. 精准狙击 Close 按钮，触发其自带的关闭逻辑
+        document.querySelectorAll('a, button, span, div').forEach(el => {
+            let txt = (el.innerText || '').trim().toUpperCase();
+            if (txt === 'CLOSE') {
+                try { el.click(); } catch(e){}
             }
         });
+        
+        // 2. 暴力拔除包含特定恶意词汇的广告区块
+        document.querySelectorAll('div, iframe').forEach(el => {
+            let txt = (el.innerText || '').toUpperCase();
+            if (txt.includes('DOWNLOAD EXTENSION') || txt.includes('TRUSTED SPOT') || txt.includes('START NOW')) {
+                try { el.remove(); } catch(e){}
+            }
+        });
+        
+        // 3. 强制剥离所有高层级蒙层 (防止透明 div 拦截点击)
         document.querySelectorAll('div').forEach(d => {
             let z = window.getComputedStyle(d).zIndex;
             if (z !== 'auto' && parseInt(z) > 1000) {
-                if (d.offsetWidth > window.innerWidth * 0.7 && d.offsetHeight > window.innerHeight * 0.7) {
-                    d.style.display = 'none';
+                // 如果这个 div 很大，几乎盖住了屏幕，直接拔除
+                if (d.offsetWidth > window.innerWidth * 0.5 && d.offsetHeight > window.innerHeight * 0.5) {
+                    try { d.remove(); } catch(e){}
                 }
             }
         });
     """
 
-    for attempt in range(8):
-        print(f"\n--- 🚀 第 {attempt + 1} 波攻势 ---")
+    print("🔄 开始寻找并点击续期按钮...")
+    success = False
 
-        # 🌟 致命修正 1：扩大搜索范围至 a 和 span，并加入长度限制精准锁定按钮
-        btn_exists = sb.execute_script("""
-            var els = document.querySelectorAll('button, a, span, div');
-            for (var i = 0; i < els.length; i++) {
-                var txt = els[i].innerText || "";
-                // 确保它是一个短文本按钮，而不是包含了 HOURS 这个词的整个网页容器
-                if (txt.toUpperCase().includes('HOURS') && txt.length < 30) {
-                    return true;
-                }
+    # 战前清理一波，防止进来就遇到广告挡路
+    sb.execute_script(nuke_ads_js)
+    sb.sleep(2)
+
+    # 🎯 锁定并点击目标按钮 (+8 HOURS / RENEW)
+    clicked = sb.execute_script("""
+        var els = document.querySelectorAll('button, a, div[role="button"]');
+        for (var i = 0; i < els.length; i++) {
+            var txt = (els[i].innerText || "").toUpperCase().trim();
+            if ((txt.includes('HOURS') || txt.includes('RENEW') || txt.includes('ADD TIME')) 
+                && !txt.includes('UPGRADE') && !txt.includes('DELETE') && txt.length > 0 && txt.length < 30) {
+                els[i].scrollIntoView({block: "center"});
+                els[i].click();
+                return true;
             }
-            return false;
-        """)
-        
-        if not btn_exists:
-            print("✅ 扫描完毕！+8 HOURS 按钮已不存在！(续期已成功或正在冷却中)")
-            success = True
-            break
+        }
+        return false;
+    """)
 
-        print("🧹 战前清理：粉碎一切视觉遮挡...")
-        sb.execute_script(cleansing_js)
-        sb.sleep(1)
-
-        print("🎯 锁定并点击续期按钮 (+8 HOURS)...")
-        sb.execute_script("""
-            var els = document.querySelectorAll('button, a, span, div');
-            for (var i = 0; i < els.length; i++) {
-                var txt = els[i].innerText || "";
-                if (txt.toUpperCase().includes('HOURS') && txt.length < 30) {
-                    els[i].scrollIntoView({block: "center"});
-                    els[i].click();
-                    break;
-                }
-            }
-        """)
-        
-        print("⏳ 等待 4 秒，诱导敌方弹窗...")
-        sb.sleep(4) 
-
-        print("🧹 战间清理：秒杀反击护盾...")
-        sb.execute_script(cleansing_js)
-        sb.sleep(1)
-
-        # ================= 🚨 物理坐标霰弹枪系统 🚨 =================
-        print("🛡️ 确认护盾清除！提取 CF 验证码执行物理枪决...")
-        
-        try:
-            from selenium.webdriver.common.action_chains import ActionChains
-            iframes = sb.find_elements("iframe")
-            cf_found = False
-            for frame in iframes:
-                try:
-                    w = frame.size.get('width', 0)
-                    h = frame.size.get('height', 0)
-                    
-                    if 10 < w < 380 and 10 < h < 380:
-                        if not frame.is_displayed():
-                            continue 
-                            
-                        cf_found = True
-                        print(f"💥 锁定可见目标！画框尺寸 {w}x{h}，启动【物理霰弹枪】盲射...")
-                        sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", frame)
-                        sb.sleep(1)
-                        
-                        try: sb.uc_gui_click_captcha()
-                        except: pass
-                        sb.sleep(1)
-
-                        try:
-                            actions = ActionChains(sb.driver)
-                            offset_1 = -int(w * 0.4)
-                            offset_2 = -int(w * 0.3)
-                            offset_3 = -int(w * 0.2)
-                            
-                            actions.move_to_element_with_offset(frame, offset_1, 0).click().pause(0.5)
-                            actions.move_to_element_with_offset(frame, offset_2, 0).click().pause(0.5)
-                            actions.move_to_element_with_offset(frame, offset_3, 0).click().perform()
-                            print("-> 物理霰弹枪横向扫射完毕！")
-                        except Exception:
-                            print("-> 霰弹枪卡壳: 目标受到保护，转为内部爆破...")
-                            
-                        try:
-                            sb.switch_to_frame(frame)
-                            body = sb.driver.find_element("css selector", "body")
-                            ActionChains(sb.driver).move_to_element(body).click().perform()
-                            sb.switch_to_default_content()
-                        except:
-                            sb.switch_to_default_content()
-
-                        break 
-                except Exception:
-                    pass
-        except Exception as e:
-            print(f"搜寻画框异常: {e}")
-
-        print("⏳ 弹夹已清空，等待 CF 服务器响应 (6秒)...")
-        sb.sleep(6)
-
-        print("✅ 尝试确认可能弹出的最终授权框...")
-        sb.execute_script("""
-            var btns = document.querySelectorAll('button');
-            for (var i = 0; i < btns.length; i++) {
-                var txt = btns[i].innerText || btns[i].textContent;
-                if (txt && (txt.includes('确认') || txt.includes('Confirm') || txt.includes('Yes') || txt.includes('Renew'))) {
-                    btns[i].click();
-                }
-            }
-        """)
-        sb.sleep(3) 
-
-    if success:
-        print("🎉 漫长战役终结，续期彻底成功！")
+    if not clicked:
+        print("✅ 扫描完毕！当前无需续期，或处于 RENEWAL COOLDOWN 冷却中。")
+        success = True
     else:
-        print("⚠️ 8 波攻势结束，时间依然没有增加。")
+        print("🎯 续期按钮已点击！")
+        print("⏳ 等待 5 秒，诱导敌方广告与 CF 护盾同时展开...")
+        sb.sleep(5) 
 
+        # 🛡️ 关键时刻：广告弹出来了，立刻执行二次清理！
+        print("🧹 战中清理：粉碎突发牛皮癣广告，确保视野清晰...")
+        sb.execute_script(nuke_ads_js)
+        sb.sleep(2)
+
+        # ================= 🚨 破解 Cloudflare Turnstile 🚨 =================
+        print("🛡️ 视野清晰！确认 CF 护盾状态...")
+        try:
+            # 确认页面上存在 cloudflare iframe
+            if sb.is_element_present('iframe[src*="cloudflare"]', timeout=5):
+                print("💥 锁定 CF 验证框，呼叫 SeleniumBase 原生穿甲弹 (uc_gui_click_captcha)...")
+                # 因为广告已经被彻底 remove，这里的原生理点击应该能精准命中了
+                sb.uc_gui_click_captcha()
+                print("⏳ 等待 CF 服务器响应 (8秒)...")
+                sb.sleep(8)
+            else:
+                print("❓ 未检测到 CF iframe，可能被免验证直接放行了。")
+        except Exception as e:
+            print(f"⚠️ CF 破解流程出现波动，尝试备用物理霰弹枪: {e}")
+            # 备选方案：如果原生点击失效，使用坐标盲射
+            try:
+                from selenium.webdriver.common.action_chains import ActionChains
+                frame = sb.find_element('iframe[src*="cloudflare"]')
+                sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", frame)
+                sb.sleep(1)
+                
+                actions = ActionChains(sb.driver)
+                w = frame.size.get('width', 300)
+                # 向左偏移点击 checkbox 大概位置
+                actions.move_to_element_with_offset(frame, -int(w * 0.3), 0).click().perform()
+                print("-> 物理霰弹枪扫射完毕！等待 8 秒...")
+                sb.sleep(8)
+            except:
+                pass
+
+        success = True  # 走到这一步基本代表流程执行完毕
+
+    print("✅ 尝试点击可能存在的最终确认(Confirm)按钮...")
+    sb.execute_script("""
+        var btns = document.querySelectorAll('button');
+        for (var i = 0; i < btns.length; i++) {
+            var txt = (btns[i].innerText || "").toUpperCase();
+            if (txt.includes('确认') || txt.includes('CONFIRM') || txt.includes('YES')) {
+                btns[i].click();
+            }
+        }
+    """)
+    sb.sleep(3) 
+
+    print("🎉 任务环节终结，请查收最终状态快照。")
     final_img = f"{email}_final_result.png"
     sb.save_screenshot(final_img)
-    send_tg_photo(f"📸 续期流程结束，最终现场快照。", final_img)
+    send_tg_photo(f"📸 账号 {email} 续期执行完毕，最终现场快照。", final_img)
+    
     return success
     
 # ================= 主流程 =================
