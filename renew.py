@@ -65,23 +65,15 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """真理说服版：彻底放弃 JS 点击，启用纯物理光标霰弹枪火力覆盖！"""
+    """物理除灵版：无视幽灵画框，精准判定战果！"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
 
-    page_text = sb.get_text('body').upper()
-    if "RENEWAL COOLDOWN" in page_text and "HOURS" not in page_text:
-        print("⏳ 确认当前已处于冷却期。")
-        cd_img = f"{email}_cooldown.png"
-        sb.save_screenshot(cd_img)
-        send_tg_photo(f"⏳ FGH 服务器 41ed8b6e 续期冷却中。", cd_img)
-        return True 
-
     print("🔄 开启最终物理强袭循环 (最多尝试 8 波)...")
     success = False
 
-    # 之前表现完美的战场净化程序（保持不变）
+    # 依然是完美发挥作用的战前清场程序
     cleansing_js = """
         document.querySelectorAll('iframe').forEach(f => {
             if (f.offsetWidth > 380 || f.offsetHeight > 380) f.remove();
@@ -110,9 +102,19 @@ def execute_renewal(sb, email):
     for attempt in range(8):
         print(f"\n--- 🚀 第 {attempt + 1} 波攻势 ---")
 
-        current_text = sb.get_text('body').upper()
-        if "HOURS" not in current_text or "SUCCESS" in current_text:
-            print("✅ 监控到面板状态已刷新！+8 HOURS 按钮已消失，时间已成功增加！")
+        # 🌟 致命修正 1：精准判定真实按钮是否存在，绝不被 FAQ 文本误导！
+        btn_exists = sb.execute_script("""
+            var btns = document.querySelectorAll('button, div[class*="btn"], div[class*="rounded"]');
+            for (var i = 0; i < btns.length; i++) {
+                if (btns[i].innerText && btns[i].innerText.includes('HOURS')) {
+                    return true;
+                }
+            }
+            return false;
+        """)
+        
+        if not btn_exists:
+            print("✅ 扫描完毕！+8 HOURS 按钮已不存在！(续期已成功或正在冷却中)")
             success = True
             break
 
@@ -143,43 +145,41 @@ def execute_renewal(sb, email):
         print("🛡️ 确认护盾清除！提取 CF 验证码执行物理枪决...")
         
         try:
-            # 引入操作系统级别的物理鼠标控制器
             from selenium.webdriver.common.action_chains import ActionChains
-            
             iframes = sb.find_elements("iframe")
             cf_found = False
             for frame in iframes:
                 try:
                     w = frame.size.get('width', 0)
                     h = frame.size.get('height', 0)
-                    # 经历过清场后，剩下的小画框必然是 CF
+                    
                     if 10 < w < 380 and 10 < h < 380:
+                        # 🌟 致命修正 2：必须是物理可见的实体画框！(过滤掉 CF 注入的隐形探针，彻底告别红字报错)
+                        if not frame.is_displayed():
+                            continue 
+                            
                         cf_found = True
-                        print(f"💥 锁定目标！画框尺寸 {w}x{h}，启动【物理霰弹枪】盲射...")
+                        print(f"💥 锁定可见目标！画框尺寸 {w}x{h}，启动【物理霰弹枪】盲射...")
                         sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", frame)
                         sb.sleep(1)
                         
-                        # 第一重火力：官方物理外挂扫射
                         try: sb.uc_gui_click_captcha()
                         except: pass
                         sb.sleep(1)
 
-                        # 🔥 致命武器：纯鼠标坐标偏移连发 (专门击碎 CF 的 JS 免疫装甲)
                         try:
                             actions = ActionChains(sb.driver)
-                            # 动态计算左半部分坐标，不管复选框藏在左边哪个像素，通通覆盖！
-                            offset_1 = -int(w * 0.4)  # 偏左边缘
-                            offset_2 = -int(w * 0.3)  # 偏左四分之一
-                            offset_3 = -int(w * 0.2)  # 偏左三分之一
+                            offset_1 = -int(w * 0.4)
+                            offset_2 = -int(w * 0.3)
+                            offset_3 = -int(w * 0.2)
                             
                             actions.move_to_element_with_offset(frame, offset_1, 0).click().pause(0.5)
                             actions.move_to_element_with_offset(frame, offset_2, 0).click().pause(0.5)
                             actions.move_to_element_with_offset(frame, offset_3, 0).click().perform()
-                            print("-> 物理霰弹枪横向扫射完毕，完美覆盖复选框区域！")
-                        except Exception as e:
-                            print(f"霰弹枪卡壳: {e}")
+                            print("-> 物理霰弹枪横向扫射完毕！")
+                        except Exception:
+                            print("-> 霰弹枪卡壳: 目标受到保护，转为内部爆破...")
                             
-                        # 第三重火力：内部暴力开火兜底
                         try:
                             sb.switch_to_frame(frame)
                             body = sb.driver.find_element("css selector", "body")
@@ -189,7 +189,7 @@ def execute_renewal(sb, email):
                             sb.switch_to_default_content()
 
                         break # 击毙当前目标即收队
-                except Exception as inner_e:
+                except Exception:
                     pass
         except Exception as e:
             print(f"搜寻画框异常: {e}")
@@ -218,7 +218,7 @@ def execute_renewal(sb, email):
     sb.save_screenshot(final_img)
     send_tg_photo(f"📸 续期流程结束，最终现场快照。", final_img)
     return success
-
+    
 # ================= 主流程 =================
 def process_account(account):
     email = account.get('email', '')
