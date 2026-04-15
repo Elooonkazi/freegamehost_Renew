@@ -65,7 +65,7 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """终极除草版：通过几何尺寸精准消灭巨型广告，保护 CF 幼苗！"""
+    """上帝模式：强行抓取 CF 验证码并置顶居中，纯物理处决！"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
@@ -78,7 +78,7 @@ def execute_renewal(sb, email):
         send_tg_photo(f"⏳ FGH 服务器 41ed8b6e 续期冷却中。", cd_img)
         return True 
 
-    print("🔄 开启战术除草循环 (最多尝试 8 波攻势)...")
+    print("🔄 开启上帝模式循环 (最多尝试 8 波)...")
     success = False
 
     for attempt in range(8):
@@ -90,9 +90,17 @@ def execute_renewal(sb, email):
             success = True
             break
 
-        # 1. 先触发陷阱：寻找并点击续期按钮
-        print("🎯 锁定并点击续期按钮 (+8 HOURS)...")
+        # 1. 寻找并点击续期按钮
+        print("🎯 寻找并点击续期按钮 (+8 HOURS)...")
         sb.execute_script("""
+            // 顺手隐藏一下烦人的大广告，免得挡住我们的视线
+            var divs = document.querySelectorAll('div');
+            for(var i=0; i<divs.length; i++) {
+                if(divs[i].innerText.includes('DOWNLOAD') || divs[i].innerText.includes('START NOW')) {
+                    try { divs[i].style.display = 'none'; } catch(e){}
+                }
+            }
+            
             var btns = document.querySelectorAll('button, div[class*="btn"], div[class*="rounded"]');
             for (var i = 0; i < btns.length; i++) {
                 if (btns[i].innerText && btns[i].innerText.includes('HOURS')) {
@@ -102,75 +110,66 @@ def execute_renewal(sb, email):
                 }
             }
         """)
-        print("⏳ 等待 4 秒，诱导点击劫持广告弹出来...")
-        sb.sleep(4) 
+        sb.sleep(5) # 必须等够时间，让 CF 验证码从网络加载出来
 
-        # ================= 🚨 几何除草机 🚨 =================
-        print("🧹 启动除草机：通过物理尺寸甄别并抹杀巨型广告...")
-        # 核心逻辑：CF 验证码通常在 300x65 左右。
-        # 那些 500x250, 1024x600 的全都是广告！必须死！
+        # ================= 🚨 上帝之手：强行提取 CF 并置顶居中 🚨 =================
+        print("🛡️ 启动上帝之手：提取 CF 验证码并强行置于屏幕正中央！")
+        
         sb.execute_script("""
-            // 杀招 1：根据尺寸物理删除巨型流氓画框
             var frames = document.querySelectorAll('iframe');
             for(var i=0; i<frames.length; i++) {
                 var rect = frames[i].getBoundingClientRect();
-                // 宽 > 400 或 高 > 200，当场抹除
-                if (rect.width > 400 || rect.height > 200) {
-                    try { frames[i].remove(); } catch(e){}
-                }
-            }
-            // 杀招 2：清理原生 DOM 里的顽固文字标签
-            var els = document.querySelectorAll('*');
-            for(var i=0; i<els.length; i++) {
-                var t = (els[i].innerText || "").toUpperCase().trim();
-                if(t === 'START NOW' || t === 'DOWNLOAD EXTENSION' || t === 'CLOSE') {
-                    try { els[i].remove(); } catch(e){}
+                // 只要尺寸是 300x65 附近的，绝对是 CF 验证码 (排除所有的巨型广告和隐藏探针)
+                if (rect.width > 250 && rect.width < 350 && rect.height > 50 && rect.height < 100) {
+                    frames[i].id = "god_mode_cf"; // 打上专属标记
+                    frames[i].style.position = 'fixed';
+                    frames[i].style.top = '50%';
+                    frames[i].style.left = '50%';
+                    frames[i].style.transform = 'translate(-50%, -50%)';
+                    frames[i].style.zIndex = '2147483647'; // 最高层级，突破天际，没有任何东西能挡住它
+                    frames[i].style.boxShadow = '0 0 0 9999px rgba(0,0,0,0.8)'; // 给周围全部打上黑色遮罩，凸显验证码
+                    frames[i].style.border = '3px solid #00FF00'; // 加上绿色瞄准框
+                    frames[i].style.display = 'block';
+                } else {
+                    // 其他所有 iframe 全部物理隐藏，防止任何干扰
+                    frames[i].style.display = 'none';
                 }
             }
         """)
-        sb.sleep(2)
+        sb.sleep(2) # 缓冲一下动画渲染
 
-        # ================= 🚨 精确点射 CF 🚨 =================
-        print("🛡️ 战场巨型障碍已清空！搜寻幸存的小尺寸 CF 验证码...")
-        
-        try:
-            sb.uc_gui_click_captcha()
-            print("-> UC 官方外挂扫射完毕。")
-        except:
-            pass
-        sb.sleep(2)
+        # 检查验证码是否成功被我们抓到了屏幕中央
+        cf_exists = sb.is_element_present("#god_mode_cf")
+        if cf_exists:
+            print("🎯 CF 验证码已被强行拖至屏幕中央！执行真人物理处决...")
+            
+            # 杀招 A：纯正物理鼠标点击（引入 ActionChains）
+            try:
+                from selenium.webdriver.common.action_chains import ActionChains
+                cf_el = sb.driver.find_element("css selector", "#god_mode_cf")
+                # 真实的鼠标移动到元素正中心，然后按下左键！这完全模拟了真人的操作。
+                ActionChains(sb.driver).move_to_element(cf_el).click().perform()
+                print("-> 物理鼠标左键精准狙击完毕！")
+            except Exception as e:
+                print(f"物理鼠标狙击发生偏差: {e}")
 
-        try:
-            iframes = sb.find_elements("iframe")
-            print(f"-> 战场上幸存了 {len(iframes)} 个画框，逐一排查...")
-            for frame in iframes:
-                try:
-                    w = frame.size.get('width', 0)
-                    h = frame.size.get('height', 0)
-                    # 🌟 致命修正：真正的 CF 尺寸必须是小方块！
-                    if 10 < w < 400 and 10 < h < 200:
-                        print(f"💥 锁定目标 CF 画框 (尺寸 {w}x{h})，执行突击！")
-                        sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", frame)
-                        sb.sleep(1)
-                        
-                        sb.switch_to_frame(frame)
-                        # 疯狂点射判定区
-                        try: sb.click('.mark', timeout=0.5)
-                        except: pass
-                        try: sb.click('.ctp-checkbox-label', timeout=0.5)
-                        except: pass
-                        try: sb.click('input[type="checkbox"]', timeout=0.5)
-                        except: pass
-                        try: sb.click('body', timeout=0.5)
-                        except: pass
-                        
-                        sb.switch_to_default_content()
-                except Exception as inner_e:
-                    sb.switch_to_default_content()
-        except Exception as e:
-            pass
+            sb.sleep(2)
 
-        print("⏳ 破甲弹已倾泻，等待面板后台验证 (5秒)...")
+            # 杀招 B：内置工具扫尾
+            try: sb.uc_gui_click_captcha()
+            except: pass
+
+            # 杀招 C：钻入画框盲点
+            try:
+                sb.switch_to_frame("#god_mode_cf")
+                sb.click('body', timeout=1)
+                sb.switch_to_default_content()
+            except:
+                sb.switch_to_default_content()
+        else:
+            print("⚠️ 本轮未扫描到尺寸匹配的 CF 画框，可能在加载或已被秒过。")
+
+        print("⏳ 破甲弹已倾泻，等待面板后台转圈验证 (5秒)...")
         sb.sleep(5)
 
         # 5. 点击可能出现的最终确认
