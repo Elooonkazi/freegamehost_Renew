@@ -65,30 +65,42 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """终极对地打击版本：无差别绞杀第三方 iframe，动态锁定 CF 护盾"""
+    """终极实战版本：按体型过滤广告，保护 CF 验证框，原生与物理双重打击"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
 
-    # 🚀 升级版防空火炮 JS：不再依赖文本识别，直接按物种(iframe)灭绝
+    # 🚀 智能防空火炮 JS：按尺寸精准区分“友军(验证码)”与“敌军(广告)”
     nuke_ads_js = """
         // 1. 常规清理：点击所有明确的 Close 按钮
         document.querySelectorAll('a, button, span, div').forEach(el => {
             let txt = (el.innerText || '').trim().toUpperCase();
-            if (txt === 'CLOSE') { try { el.click(); } catch(e){} }
+            if (txt === 'CLOSE' || txt === 'X') { try { el.click(); } catch(e){} }
         });
         
-        // 2. 终极大招：无差别摧毁所有非 Cloudflare 的 iframe (彻底解决底部悬浮与弹窗广告)
+        // 2. 文本清理：清理原生的广告文字节点
+        document.querySelectorAll('div, a').forEach(el => {
+            let txt = (el.innerText || '').toUpperCase();
+            if (txt.includes('DOWNLOAD EXTENSION') || txt.includes('TRUSTED SPOT') || txt.includes('2 EASY STEPS')) {
+                try { el.remove(); } catch(e){}
+            }
+        });
+        
+        // 3. 核心：按【尺寸】识别 iframe
         document.querySelectorAll('iframe').forEach(f => {
+            // CF 验证码通常是 ~300x65，宽容一点设为 400x120
+            // 如果它很小巧，说明它是验证码，绝对不杀！
+            if (f.offsetWidth > 0 && f.offsetWidth <= 400 && f.offsetHeight > 0 && f.offsetHeight <= 120) {
+                return; 
+            }
+            // 如果它尺寸巨大，或者是隐藏状态，且名字不叫 cloudflare，拔除！
             let src = (f.src || '').toLowerCase();
-            let title = (f.title || '').toLowerCase();
-            // 只要链接和标题里没有 cloudflare 或 turnstile，一律视为广告，直接拔除！
-            if (!src.includes('cloudflare') && !title.includes('cloudflare') && !src.includes('turnstile')) {
+            if (!src.includes('cloudflare') && !src.includes('turnstile')) {
                 try { f.remove(); } catch(e){}
             }
         });
         
-        // 3. 强制剥离所有高层级全局透明蒙层
+        // 4. 强制剥离所有高层级全局透明蒙层
         document.querySelectorAll('div').forEach(d => {
             let z = window.getComputedStyle(d).zIndex;
             if (z !== 'auto' && parseInt(z) > 1000) {
@@ -125,43 +137,42 @@ def execute_renewal(sb, email):
         success = True
     else:
         print("🎯 续期按钮已点击！")
-        print("⏳ 等待敌方阵列展开 (4秒)...")
-        sb.sleep(4) 
+        print("⏳ 等待敌方阵列与 CF 验证框展开 (6秒)...")
+        sb.sleep(6) 
 
-        # 🛡️ 战中清理：CF 出来的一瞬间，把伴生的广告 iframe 全部扬了
-        print("🧹 战中清理：启动无差别 iframe 绞杀，确保绝对视野...")
+        # 🛡️ 战中清理：保留小尺寸 CF，杀掉大尺寸广告
+        print("🧹 战中清理：启动尺寸鉴别级清场，确保视野绝对清晰...")
         sb.execute_script(nuke_ads_js)
         sb.sleep(2)
 
         # ================= 🚨 破解 Cloudflare Turnstile 🚨 =================
-        print("🛡️ 视野绝对清晰！开始动态捕获 CF 护盾...")
+        print("🛡️ 呼叫原生穿甲弹 (uc_gui_click_captcha)...")
         try:
-            # 🐞 修复点：废弃 is_element_present 的瞬间检测，改用 wait_for_element_present 动态死等 15 秒
-            cf_selector = 'iframe[src*="cloudflare"], iframe[title*="Cloudflare"], iframe[src*="turnstile"]'
-            sb.wait_for_element_present(cf_selector, timeout=15)
-            
-            print("💥 成功锁定 CF 验证框！呼叫原生穿甲弹 (uc_gui_click_captcha)...")
+            # 不再使用会导致崩溃的 wait_for_element，直接让 uc_gui 去找
             sb.uc_gui_click_captcha()
             print("⏳ 穿甲弹已发射，等待 CF 服务器校验响应 (8秒)...")
             sb.sleep(8)
-            
         except Exception as e:
-            print(f"⚠️ 动态捕获 CF 失败，可能雷达被屏蔽，转入坐标物理盲射: {e}")
+            print(f"⚠️ 原生穿甲弹遇阻: {e}，启动物理坐标盲射...")
             try:
                 from selenium.webdriver.common.action_chains import ActionChains
-                # 尝试用非常宽泛的条件找到页面上仅存的 iframe (因为别的 iframe 已经被前面清光了)
-                frame = sb.find_element('iframe')
-                sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", frame)
-                sb.sleep(1)
-                
-                actions = ActionChains(sb.driver)
-                w = frame.size.get('width', 300)
-                # 往左侧偏移，点击通常 checkbox 所在的位置
-                actions.move_to_element_with_offset(frame, -int(w * 0.3), 0).click().perform()
-                print("-> 物理盲射完毕！等待 8 秒...")
-                sb.sleep(8)
-            except:
-                print("-> 物理盲射失败，目标完全隐形。")
+                # 页面上应该只剩下一个小尺寸的验证码 iframe 了
+                iframes = sb.find_elements('iframe')
+                for f in iframes:
+                    w = f.size.get('width', 0)
+                    h = f.size.get('height', 0)
+                    # 再次确认它是小尺寸验证码
+                    if 200 < w < 400 and 40 < h < 120:
+                        sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", f)
+                        sb.sleep(1)
+                        # 瞄准 iframe 的偏左侧 (checkbox 通常在左边)
+                        actions = ActionChains(sb.driver)
+                        actions.move_to_element_with_offset(f, -int(w * 0.35), 0).click().perform()
+                        print("🎯 物理盲射命中目标！等待 8 秒...")
+                        sb.sleep(8)
+                        break
+            except Exception as e2:
+                print(f"-> 物理盲射失败: {e2}")
 
         success = True 
 
