@@ -65,7 +65,7 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """降维打击版：物理销毁广告画框 + 疯狗模式强点"""
+    """最终审判版：连根拔除广告尸体 + 坐标锁定强杀 CF"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
@@ -78,43 +78,38 @@ def execute_renewal(sb, email):
         send_tg_photo(f"⏳ FGH 服务器 41ed8b6e 续期冷却中。", cd_img)
         return True 
 
-    print("🔄 开启无限制火力覆盖循环 (最多尝试 8 波攻势)...")
+    print("🔄 开启最终审判循环 (最多尝试 8 波攻势)...")
     success = False
 
     for attempt in range(8):
         print(f"\n--- 🚀 第 {attempt + 1} 波攻势 ---")
 
-        # 1. 检查是否已经彻底胜利 (加时成功后 HOURS 按钮会消失)
+        # 1. 检查是否已经彻底胜利
         current_text = sb.get_text('body').upper()
         if "HOURS" not in current_text or "SUCCESS" in current_text:
             print("✅ 监控到面板状态已刷新！+8 HOURS 按钮已消失，时间已成功增加！")
             success = True
             break
 
-        # ================= 🚨 终极广告屠杀引擎 🚨 =================
-        print("🧹 启动定向屠杀：清理隐形劫持层与弹窗广告...")
+        # ================= 🚨 广告尸体焚化炉 🚨 =================
+        print("🧹 启动焚化炉：连根拔除所有的弹窗与广告尸体...")
         sb.execute_script("""
-            // 杀招 1：连根拔起所有非 CF 的第三方广告/劫持画框！
+            // 杀招 1：清理所有非 CF 的流氓 iframe
             var frames = document.querySelectorAll('iframe');
             for(var i=0; i<frames.length; i++) {
                 var src = (frames[i].src || "").toLowerCase();
-                // 只要不是 CF 相关的安全验证，全部销毁
                 if(!src.includes('cloudflare') && !src.includes('turnstile') && !src.includes('challenge')) {
                     try { frames[i].remove(); } catch(e){}
                 }
             }
-
-            // 杀招 2：精确点击并隐藏本网页内的所有 Close 按钮
-            var els = document.querySelectorAll('span, div, a, button');
+            // 杀招 2：不仅隐藏文字，连带它的父级、爷爷级容器一起抹除！(解决白框尸体)
+            var els = document.querySelectorAll('*');
             for(var i=0; i<els.length; i++) {
                 var t = (els[i].innerText || "").toUpperCase().trim();
-                if(t === 'CLOSE' || t.includes('NOT SELL')) {
-                    try { els[i].click(); } catch(e){}
+                if(t === 'START NOW' || t === 'DOWNLOAD EXTENSION' || t === 'CLOSE' || t.includes('NOT SELL')) {
                     try { els[i].style.display = 'none'; } catch(e){}
-                }
-                // 顺手把 START NOW 和 DOWNLOAD 这种流氓块也抹掉
-                if(t === 'START NOW' || t === 'DOWNLOAD EXTENSION') {
-                    try { els[i].style.display = 'none'; } catch(e){}
+                    try { els[i].parentElement.style.display = 'none'; } catch(e){}
+                    try { els[i].parentElement.parentElement.style.display = 'none'; } catch(e){}
                 }
             }
         """)
@@ -132,34 +127,57 @@ def execute_renewal(sb, email):
                 }
             }
         """)
-        sb.sleep(5) # 等 CF 从云端渲染出来
+        sb.sleep(6) # 必须等够时间，让 CF 验证码从网络加载出来
 
-        # ================= 🚨 盲放 CF 毁灭者 🚨 =================
-        print("🛡️ 无差别释放 CF 毁灭者...")
-        
-        # 第一重火力：UC 官方外挂真人模拟点击
-        try:
-            sb.uc_gui_click_captcha()
-        except:
-            pass
-            
-        sb.sleep(2)
-
-        # 第二重火力：画框潜入刺杀（因为前面的屠杀引擎已经清空了杂鱼，现在剩下的 iframe 只有 CF 了！）
+        # ================= 🚨 追踪导弹：强杀 CF 🚨 =================
+        print("🛡️ 雷达扫描 CF 验证码...")
         try:
             iframes = sb.find_elements("iframe")
+            cf_found = False
             for frame in iframes:
-                try:
-                    sb.switch_to_frame(frame)
-                    sb.click('body', timeout=1) # 对着白板盲狙一枪
-                    sb.switch_to_default_content()
-                except:
-                    sb.switch_to_default_content()
+                src = (frame.get_attribute("src") or "").lower()
+                # 精准锁定：只要链接里带这些关键词，绝对是 CF 验证码！
+                if "cloudflare" in src or "turnstile" in src or "challenge" in src:
+                    cf_found = True
+                    print(f"💥 追踪导弹锁定目标: CF 画框已找到！")
+                    
+                    # 第一步：强制把 CF 画框拉到屏幕最核心、最中央的位置！远离一切边缘干扰！
+                    sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", frame)
+                    sb.sleep(1)
+                    
+                    # 第二步：释放 UC 官方纯物理点击外挂
+                    print("-> 释放物理点击...")
+                    try: sb.uc_gui_click_captcha()
+                    except: pass
+                    sb.sleep(2)
+                    
+                    # 第三步：如果外挂没中，直接钻进画框，用枪顶着它的脑门（复选框）开火！
+                    print("-> 释放画框穿透刺杀...")
+                    try:
+                        sb.switch_to_frame(frame)
+                        # Turnstile 验证码底层的原生复选框元素特征
+                        sb.click('input[type="checkbox"], .ctp-checkbox-label, .mark', timeout=2)
+                        sb.switch_to_default_content()
+                        print("🎯 精准刺杀完成！")
+                    except:
+                        sb.switch_to_default_content()
+                        # 兜底盲狙
+                        try:
+                            sb.switch_to_frame(frame)
+                            sb.click('body', timeout=1)
+                            sb.switch_to_default_content()
+                        except:
+                            sb.switch_to_default_content()
+                    
+                    break # 打完这个 CF 目标，立刻退出循环！
+                    
+            if not cf_found:
+                print("⚠️ 本轮未扫描到带有 CF 特征的 iframe，可能在加载或已被秒过。")
         except Exception as e:
-            pass
+            print(f"CF 处理异常: {e}")
 
-        print("⏳ 破甲弹已发射，等待 CF 服务器转圈圈响应 (5秒)...")
-        sb.sleep(5)
+        print("⏳ 破甲弹已发射，等待 CF 服务器转圈圈响应 (6秒)...")
+        sb.sleep(6)
 
         # 5. 点击所有确认按钮
         print("✅ 尝试确认最终授权弹窗...")
