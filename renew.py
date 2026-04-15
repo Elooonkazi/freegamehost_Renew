@@ -65,7 +65,7 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """解开所有基因锁的终极形态：无视名字，全图强制开火！"""
+    """终极除草版：通过几何尺寸精准消灭巨型广告，保护 CF 幼苗！"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
@@ -78,7 +78,7 @@ def execute_renewal(sb, email):
         send_tg_photo(f"⏳ FGH 服务器 41ed8b6e 续期冷却中。", cd_img)
         return True 
 
-    print("🔄 开启最终无限制火力循环 (最多尝试 8 波攻势)...")
+    print("🔄 开启战术除草循环 (最多尝试 8 波攻势)...")
     success = False
 
     for attempt in range(8):
@@ -90,24 +90,7 @@ def execute_renewal(sb, email):
             success = True
             break
 
-        # ================= 🚨 广告尸体焚化炉 🚨 =================
-        print("🧹 启动焚化炉：清理弹窗与劫持...")
-        # 去掉了危险的 iframe 删除逻辑，避免误伤没名字的 CF 验证码
-        # 直接暴力隐藏包含敏感广告词的元素及其祖宗节点！
-        sb.execute_script("""
-            var els = document.querySelectorAll('*');
-            for(var i=0; i<els.length; i++) {
-                var t = (els[i].innerText || "").toUpperCase().trim();
-                if(t === 'START NOW' || t === 'DOWNLOAD EXTENSION' || t === 'CLOSE' || t.includes('NOT SELL')) {
-                    try { els[i].style.display = 'none'; } catch(e){}
-                    try { els[i].parentElement.style.display = 'none'; } catch(e){}
-                    try { els[i].parentElement.parentElement.style.display = 'none'; } catch(e){}
-                }
-            }
-        """)
-        sb.sleep(1)
-
-        # 3. 寻找并点击续期按钮
+        # 1. 先触发陷阱：寻找并点击续期按钮
         print("🎯 锁定并点击续期按钮 (+8 HOURS)...")
         sb.execute_script("""
             var btns = document.querySelectorAll('button, div[class*="btn"], div[class*="rounded"]');
@@ -119,55 +102,79 @@ def execute_renewal(sb, email):
                 }
             }
         """)
-        sb.sleep(6) # 等待 CF 验证码弹窗渲染
+        print("⏳ 等待 4 秒，诱导点击劫持广告弹出来...")
+        sb.sleep(4) 
 
-        # ================= 🚨 终极无脑开火 🚨 =================
-        print("🛡️ 解除所有识别限制！全频段火力覆盖开始！")
+        # ================= 🚨 几何除草机 🚨 =================
+        print("🧹 启动除草机：通过物理尺寸甄别并抹杀巨型广告...")
+        # 核心逻辑：CF 验证码通常在 300x65 左右。
+        # 那些 500x250, 1024x600 的全都是广告！必须死！
+        sb.execute_script("""
+            // 杀招 1：根据尺寸物理删除巨型流氓画框
+            var frames = document.querySelectorAll('iframe');
+            for(var i=0; i<frames.length; i++) {
+                var rect = frames[i].getBoundingClientRect();
+                // 宽 > 400 或 高 > 200，当场抹除
+                if (rect.width > 400 || rect.height > 200) {
+                    try { frames[i].remove(); } catch(e){}
+                }
+            }
+            // 杀招 2：清理原生 DOM 里的顽固文字标签
+            var els = document.querySelectorAll('*');
+            for(var i=0; i<els.length; i++) {
+                var t = (els[i].innerText || "").toUpperCase().trim();
+                if(t === 'START NOW' || t === 'DOWNLOAD EXTENSION' || t === 'CLOSE') {
+                    try { els[i].remove(); } catch(e){}
+                }
+            }
+        """)
+        sb.sleep(2)
+
+        # ================= 🚨 精确点射 CF 🚨 =================
+        print("🛡️ 战场巨型障碍已清空！搜寻幸存的小尺寸 CF 验证码...")
         
-        # 第一重火力：UC 官方物理外挂 (无条件释放)
         try:
-            print("-> 释放 UC 物理真人点击外挂...")
             sb.uc_gui_click_captcha()
+            print("-> UC 官方外挂扫射完毕。")
         except:
             pass
         sb.sleep(2)
 
-        # 第二重火力：全图画框潜入刺杀 (不再检查 src 名字！)
         try:
             iframes = sb.find_elements("iframe")
-            print(f"-> 发现 {len(iframes)} 个画框，开始逐一排查...")
+            print(f"-> 战场上幸存了 {len(iframes)} 个画框，逐一排查...")
             for frame in iframes:
                 try:
                     w = frame.size.get('width', 0)
                     h = frame.size.get('height', 0)
-                    # 只要尺寸大于 50x50，大概率就是验证码框！直接干它！
-                    if w > 50 and h > 50:
-                        print(f"💥 突入尺寸为 {w}x{h} 的可疑画框执行刺杀...")
+                    # 🌟 致命修正：真正的 CF 尺寸必须是小方块！
+                    if 10 < w < 400 and 10 < h < 200:
+                        print(f"💥 锁定目标 CF 画框 (尺寸 {w}x{h})，执行突击！")
                         sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", frame)
                         sb.sleep(1)
                         
                         sb.switch_to_frame(frame)
-                        # 疯狂点射所有可能的验证码判定区
+                        # 疯狂点射判定区
                         try: sb.click('.mark', timeout=0.5)
                         except: pass
                         try: sb.click('.ctp-checkbox-label', timeout=0.5)
                         except: pass
                         try: sb.click('input[type="checkbox"]', timeout=0.5)
                         except: pass
-                        try: sb.click('body', timeout=0.5) # 兜底盲点
+                        try: sb.click('body', timeout=0.5)
                         except: pass
                         
                         sb.switch_to_default_content()
                 except Exception as inner_e:
                     sb.switch_to_default_content()
         except Exception as e:
-            print(f"画框遍历异常 (可忽略): {e}")
+            pass
 
-        print("⏳ 破甲弹已全部倾泻，等待 CF 服务器转圈圈响应 (6秒)...")
-        sb.sleep(6)
+        print("⏳ 破甲弹已倾泻，等待面板后台验证 (5秒)...")
+        sb.sleep(5)
 
-        # 5. 点击所有确认按钮
-        print("✅ 尝试确认最终授权弹窗...")
+        # 5. 点击可能出现的最终确认
+        print("✅ 尝试确认可能弹出的最终授权框...")
         sb.execute_script("""
             var btns = document.querySelectorAll('button');
             for (var i = 0; i < btns.length; i++) {
@@ -182,7 +189,7 @@ def execute_renewal(sb, email):
     if success:
         print("🎉 漫长战役终结，续期彻底成功！")
     else:
-        print("⚠️ 8 波攻势结束，时间依然没有增加。可能面板 API 宕机或防弹盾过厚。")
+        print("⚠️ 8 波攻势结束，时间依然没有增加。")
 
     final_img = f"{email}_final_result.png"
     sb.save_screenshot(final_img)
