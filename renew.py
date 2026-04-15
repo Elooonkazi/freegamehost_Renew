@@ -65,30 +65,30 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """终极对地打击版本：修复 timeout 语法错误，专治底部悬浮广告 + CF组合盾"""
+    """终极对地打击版本：无差别绞杀第三方 iframe，动态锁定 CF 护盾"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
 
-    # 🚀 升级版防空火炮 JS：精确狙击底部悬浮广告和所有蒙层
+    # 🚀 升级版防空火炮 JS：不再依赖文本识别，直接按物种(iframe)灭绝
     nuke_ads_js = """
-        // 1. 精准狙击 Close 按钮，触发其自带的关闭逻辑
+        // 1. 常规清理：点击所有明确的 Close 按钮
         document.querySelectorAll('a, button, span, div').forEach(el => {
             let txt = (el.innerText || '').trim().toUpperCase();
-            if (txt === 'CLOSE') {
-                try { el.click(); } catch(e){}
+            if (txt === 'CLOSE') { try { el.click(); } catch(e){} }
+        });
+        
+        // 2. 终极大招：无差别摧毁所有非 Cloudflare 的 iframe (彻底解决底部悬浮与弹窗广告)
+        document.querySelectorAll('iframe').forEach(f => {
+            let src = (f.src || '').toLowerCase();
+            let title = (f.title || '').toLowerCase();
+            // 只要链接和标题里没有 cloudflare 或 turnstile，一律视为广告，直接拔除！
+            if (!src.includes('cloudflare') && !title.includes('cloudflare') && !src.includes('turnstile')) {
+                try { f.remove(); } catch(e){}
             }
         });
         
-        // 2. 暴力拔除包含特定恶意词汇的广告区块 (涵盖底部横幅)
-        document.querySelectorAll('div, iframe, a').forEach(el => {
-            let txt = (el.innerText || '').toUpperCase();
-            if (txt.includes('DOWNLOAD EXTENSION') || txt.includes('TRUSTED SPOT') || txt.includes('START NOW') || txt.includes('2 EASY STEPS')) {
-                try { el.remove(); } catch(e){}
-            }
-        });
-        
-        // 3. 强制剥离所有高层级蒙层
+        // 3. 强制剥离所有高层级全局透明蒙层
         document.querySelectorAll('div').forEach(d => {
             let z = window.getComputedStyle(d).zIndex;
             if (z !== 'auto' && parseInt(z) > 1000) {
@@ -125,40 +125,43 @@ def execute_renewal(sb, email):
         success = True
     else:
         print("🎯 续期按钮已点击！")
-        print("⏳ 等待 5 秒，诱导敌方广告与 CF 护盾同时展开...")
-        sb.sleep(5) 
+        print("⏳ 等待敌方阵列展开 (4秒)...")
+        sb.sleep(4) 
 
-        # 🛡️ 关键时刻：广告弹出来了，立刻执行二次清理！
-        print("🧹 战中清理：粉碎突发牛皮癣广告，确保视野清晰...")
+        # 🛡️ 战中清理：CF 出来的一瞬间，把伴生的广告 iframe 全部扬了
+        print("🧹 战中清理：启动无差别 iframe 绞杀，确保绝对视野...")
         sb.execute_script(nuke_ads_js)
         sb.sleep(2)
 
         # ================= 🚨 破解 Cloudflare Turnstile 🚨 =================
-        print("🛡️ 视野清晰！确认 CF 护盾状态...")
+        print("🛡️ 视野绝对清晰！开始动态捕获 CF 护盾...")
         try:
-            # 🐞 修复点：移除了导致崩溃的 timeout=5 参数
-            if sb.is_element_present('iframe[src*="cloudflare"]'):
-                print("💥 锁定 CF 验证框，呼叫 SeleniumBase 原生穿甲弹 (uc_gui_click_captcha)...")
-                sb.uc_gui_click_captcha()
-                print("⏳ 等待 CF 服务器响应 (8秒)...")
-                sb.sleep(8)
-            else:
-                print("❓ 未检测到 CF iframe，可能被免验证直接放行了。")
+            # 🐞 修复点：废弃 is_element_present 的瞬间检测，改用 wait_for_element_present 动态死等 15 秒
+            cf_selector = 'iframe[src*="cloudflare"], iframe[title*="Cloudflare"], iframe[src*="turnstile"]'
+            sb.wait_for_element_present(cf_selector, timeout=15)
+            
+            print("💥 成功锁定 CF 验证框！呼叫原生穿甲弹 (uc_gui_click_captcha)...")
+            sb.uc_gui_click_captcha()
+            print("⏳ 穿甲弹已发射，等待 CF 服务器校验响应 (8秒)...")
+            sb.sleep(8)
+            
         except Exception as e:
-            print(f"⚠️ CF 破解流程出现波动，尝试备用物理霰弹枪: {e}")
+            print(f"⚠️ 动态捕获 CF 失败，可能雷达被屏蔽，转入坐标物理盲射: {e}")
             try:
                 from selenium.webdriver.common.action_chains import ActionChains
-                frame = sb.find_element('iframe[src*="cloudflare"]')
+                # 尝试用非常宽泛的条件找到页面上仅存的 iframe (因为别的 iframe 已经被前面清光了)
+                frame = sb.find_element('iframe')
                 sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", frame)
                 sb.sleep(1)
                 
                 actions = ActionChains(sb.driver)
                 w = frame.size.get('width', 300)
+                # 往左侧偏移，点击通常 checkbox 所在的位置
                 actions.move_to_element_with_offset(frame, -int(w * 0.3), 0).click().perform()
-                print("-> 物理霰弹枪扫射完毕！等待 8 秒...")
+                print("-> 物理盲射完毕！等待 8 秒...")
                 sb.sleep(8)
             except:
-                pass
+                print("-> 物理盲射失败，目标完全隐形。")
 
         success = True 
 
