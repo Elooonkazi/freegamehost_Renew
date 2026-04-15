@@ -65,12 +65,12 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """终极对地打击版本：专治突发广告蒙层 + CF组合盾"""
+    """终极对地打击版本：修复 timeout 语法错误，专治底部悬浮广告 + CF组合盾"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
 
-    # 🚀 升级版防空火炮 JS：不只隐藏，直接物理超度 DOM 节点
+    # 🚀 升级版防空火炮 JS：精确狙击底部悬浮广告和所有蒙层
     nuke_ads_js = """
         // 1. 精准狙击 Close 按钮，触发其自带的关闭逻辑
         document.querySelectorAll('a, button, span, div').forEach(el => {
@@ -80,19 +80,18 @@ def execute_renewal(sb, email):
             }
         });
         
-        // 2. 暴力拔除包含特定恶意词汇的广告区块
-        document.querySelectorAll('div, iframe').forEach(el => {
+        // 2. 暴力拔除包含特定恶意词汇的广告区块 (涵盖底部横幅)
+        document.querySelectorAll('div, iframe, a').forEach(el => {
             let txt = (el.innerText || '').toUpperCase();
-            if (txt.includes('DOWNLOAD EXTENSION') || txt.includes('TRUSTED SPOT') || txt.includes('START NOW')) {
+            if (txt.includes('DOWNLOAD EXTENSION') || txt.includes('TRUSTED SPOT') || txt.includes('START NOW') || txt.includes('2 EASY STEPS')) {
                 try { el.remove(); } catch(e){}
             }
         });
         
-        // 3. 强制剥离所有高层级蒙层 (防止透明 div 拦截点击)
+        // 3. 强制剥离所有高层级蒙层
         document.querySelectorAll('div').forEach(d => {
             let z = window.getComputedStyle(d).zIndex;
             if (z !== 'auto' && parseInt(z) > 1000) {
-                // 如果这个 div 很大，几乎盖住了屏幕，直接拔除
                 if (d.offsetWidth > window.innerWidth * 0.5 && d.offsetHeight > window.innerHeight * 0.5) {
                     try { d.remove(); } catch(e){}
                 }
@@ -103,11 +102,10 @@ def execute_renewal(sb, email):
     print("🔄 开始寻找并点击续期按钮...")
     success = False
 
-    # 战前清理一波，防止进来就遇到广告挡路
     sb.execute_script(nuke_ads_js)
     sb.sleep(2)
 
-    # 🎯 锁定并点击目标按钮 (+8 HOURS / RENEW)
+    # 🎯 锁定并点击目标按钮
     clicked = sb.execute_script("""
         var els = document.querySelectorAll('button, a, div[role="button"]');
         for (var i = 0; i < els.length; i++) {
@@ -138,10 +136,9 @@ def execute_renewal(sb, email):
         # ================= 🚨 破解 Cloudflare Turnstile 🚨 =================
         print("🛡️ 视野清晰！确认 CF 护盾状态...")
         try:
-            # 确认页面上存在 cloudflare iframe
-            if sb.is_element_present('iframe[src*="cloudflare"]', timeout=5):
+            # 🐞 修复点：移除了导致崩溃的 timeout=5 参数
+            if sb.is_element_present('iframe[src*="cloudflare"]'):
                 print("💥 锁定 CF 验证框，呼叫 SeleniumBase 原生穿甲弹 (uc_gui_click_captcha)...")
-                # 因为广告已经被彻底 remove，这里的原生理点击应该能精准命中了
                 sb.uc_gui_click_captcha()
                 print("⏳ 等待 CF 服务器响应 (8秒)...")
                 sb.sleep(8)
@@ -149,7 +146,6 @@ def execute_renewal(sb, email):
                 print("❓ 未检测到 CF iframe，可能被免验证直接放行了。")
         except Exception as e:
             print(f"⚠️ CF 破解流程出现波动，尝试备用物理霰弹枪: {e}")
-            # 备选方案：如果原生点击失效，使用坐标盲射
             try:
                 from selenium.webdriver.common.action_chains import ActionChains
                 frame = sb.find_element('iframe[src*="cloudflare"]')
@@ -158,14 +154,13 @@ def execute_renewal(sb, email):
                 
                 actions = ActionChains(sb.driver)
                 w = frame.size.get('width', 300)
-                # 向左偏移点击 checkbox 大概位置
                 actions.move_to_element_with_offset(frame, -int(w * 0.3), 0).click().perform()
                 print("-> 物理霰弹枪扫射完毕！等待 8 秒...")
                 sb.sleep(8)
             except:
                 pass
 
-        success = True  # 走到这一步基本代表流程执行完毕
+        success = True 
 
     print("✅ 尝试点击可能存在的最终确认(Confirm)按钮...")
     sb.execute_script("""
