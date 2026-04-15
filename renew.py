@@ -65,7 +65,7 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """最终审判版：连根拔除广告尸体 + 坐标锁定强杀 CF"""
+    """解开所有基因锁的终极形态：无视名字，全图强制开火！"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
@@ -78,13 +78,12 @@ def execute_renewal(sb, email):
         send_tg_photo(f"⏳ FGH 服务器 41ed8b6e 续期冷却中。", cd_img)
         return True 
 
-    print("🔄 开启最终审判循环 (最多尝试 8 波攻势)...")
+    print("🔄 开启最终无限制火力循环 (最多尝试 8 波攻势)...")
     success = False
 
     for attempt in range(8):
         print(f"\n--- 🚀 第 {attempt + 1} 波攻势 ---")
 
-        # 1. 检查是否已经彻底胜利
         current_text = sb.get_text('body').upper()
         if "HOURS" not in current_text or "SUCCESS" in current_text:
             print("✅ 监控到面板状态已刷新！+8 HOURS 按钮已消失，时间已成功增加！")
@@ -92,17 +91,10 @@ def execute_renewal(sb, email):
             break
 
         # ================= 🚨 广告尸体焚化炉 🚨 =================
-        print("🧹 启动焚化炉：连根拔除所有的弹窗与广告尸体...")
+        print("🧹 启动焚化炉：清理弹窗与劫持...")
+        # 去掉了危险的 iframe 删除逻辑，避免误伤没名字的 CF 验证码
+        # 直接暴力隐藏包含敏感广告词的元素及其祖宗节点！
         sb.execute_script("""
-            // 杀招 1：清理所有非 CF 的流氓 iframe
-            var frames = document.querySelectorAll('iframe');
-            for(var i=0; i<frames.length; i++) {
-                var src = (frames[i].src || "").toLowerCase();
-                if(!src.includes('cloudflare') && !src.includes('turnstile') && !src.includes('challenge')) {
-                    try { frames[i].remove(); } catch(e){}
-                }
-            }
-            // 杀招 2：不仅隐藏文字，连带它的父级、爷爷级容器一起抹除！(解决白框尸体)
             var els = document.querySelectorAll('*');
             for(var i=0; i<els.length; i++) {
                 var t = (els[i].innerText || "").toUpperCase().trim();
@@ -127,56 +119,51 @@ def execute_renewal(sb, email):
                 }
             }
         """)
-        sb.sleep(6) # 必须等够时间，让 CF 验证码从网络加载出来
+        sb.sleep(6) # 等待 CF 验证码弹窗渲染
 
-        # ================= 🚨 追踪导弹：强杀 CF 🚨 =================
-        print("🛡️ 雷达扫描 CF 验证码...")
+        # ================= 🚨 终极无脑开火 🚨 =================
+        print("🛡️ 解除所有识别限制！全频段火力覆盖开始！")
+        
+        # 第一重火力：UC 官方物理外挂 (无条件释放)
+        try:
+            print("-> 释放 UC 物理真人点击外挂...")
+            sb.uc_gui_click_captcha()
+        except:
+            pass
+        sb.sleep(2)
+
+        # 第二重火力：全图画框潜入刺杀 (不再检查 src 名字！)
         try:
             iframes = sb.find_elements("iframe")
-            cf_found = False
+            print(f"-> 发现 {len(iframes)} 个画框，开始逐一排查...")
             for frame in iframes:
-                src = (frame.get_attribute("src") or "").lower()
-                # 精准锁定：只要链接里带这些关键词，绝对是 CF 验证码！
-                if "cloudflare" in src or "turnstile" in src or "challenge" in src:
-                    cf_found = True
-                    print(f"💥 追踪导弹锁定目标: CF 画框已找到！")
-                    
-                    # 第一步：强制把 CF 画框拉到屏幕最核心、最中央的位置！远离一切边缘干扰！
-                    sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", frame)
-                    sb.sleep(1)
-                    
-                    # 第二步：释放 UC 官方纯物理点击外挂
-                    print("-> 释放物理点击...")
-                    try: sb.uc_gui_click_captcha()
-                    except: pass
-                    sb.sleep(2)
-                    
-                    # 第三步：如果外挂没中，直接钻进画框，用枪顶着它的脑门（复选框）开火！
-                    print("-> 释放画框穿透刺杀...")
-                    try:
+                try:
+                    w = frame.size.get('width', 0)
+                    h = frame.size.get('height', 0)
+                    # 只要尺寸大于 50x50，大概率就是验证码框！直接干它！
+                    if w > 50 and h > 50:
+                        print(f"💥 突入尺寸为 {w}x{h} 的可疑画框执行刺杀...")
+                        sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", frame)
+                        sb.sleep(1)
+                        
                         sb.switch_to_frame(frame)
-                        # Turnstile 验证码底层的原生复选框元素特征
-                        sb.click('input[type="checkbox"], .ctp-checkbox-label, .mark', timeout=2)
+                        # 疯狂点射所有可能的验证码判定区
+                        try: sb.click('.mark', timeout=0.5)
+                        except: pass
+                        try: sb.click('.ctp-checkbox-label', timeout=0.5)
+                        except: pass
+                        try: sb.click('input[type="checkbox"]', timeout=0.5)
+                        except: pass
+                        try: sb.click('body', timeout=0.5) # 兜底盲点
+                        except: pass
+                        
                         sb.switch_to_default_content()
-                        print("🎯 精准刺杀完成！")
-                    except:
-                        sb.switch_to_default_content()
-                        # 兜底盲狙
-                        try:
-                            sb.switch_to_frame(frame)
-                            sb.click('body', timeout=1)
-                            sb.switch_to_default_content()
-                        except:
-                            sb.switch_to_default_content()
-                    
-                    break # 打完这个 CF 目标，立刻退出循环！
-                    
-            if not cf_found:
-                print("⚠️ 本轮未扫描到带有 CF 特征的 iframe，可能在加载或已被秒过。")
+                except Exception as inner_e:
+                    sb.switch_to_default_content()
         except Exception as e:
-            print(f"CF 处理异常: {e}")
+            print(f"画框遍历异常 (可忽略): {e}")
 
-        print("⏳ 破甲弹已发射，等待 CF 服务器转圈圈响应 (6秒)...")
+        print("⏳ 破甲弹已全部倾泻，等待 CF 服务器转圈圈响应 (6秒)...")
         sb.sleep(6)
 
         # 5. 点击所有确认按钮
