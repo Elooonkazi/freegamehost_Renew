@@ -65,7 +65,7 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """内窥镜战术：无视所有外部伪装，直接钻入画框查核心！"""
+    """绝地反击版：破除延时护盾，直接贴脸碎星！"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
@@ -90,22 +90,7 @@ def execute_renewal(sb, email):
             success = True
             break
 
-        # ================= 🚨 终极广告焚化炉 🚨 =================
-        print("🧹 清理战场广告与白框尸体...")
-        # 这一版直接 remove() 父元素，彻底粉碎，绝不留下白色遮罩尸体！
-        sb.execute_script("""
-            var els = document.querySelectorAll('*');
-            for(var i=0; i<els.length; i++) {
-                var t = (els[i].innerText || "").toUpperCase().trim();
-                if(t === 'START NOW' || t === 'DOWNLOAD EXTENSION' || t === 'CLOSE' || t.includes('NOT SELL')) {
-                    try { els[i].parentElement.remove(); } catch(e){}
-                    try { els[i].remove(); } catch(e){}
-                }
-            }
-        """)
-        sb.sleep(1)
-
-        # 3. 寻找并点击续期按钮
+        # 1. 直接触发陷阱：寻找并点击续期按钮
         print("🎯 锁定并点击续期按钮 (+8 HOURS)...")
         sb.execute_script("""
             var btns = document.querySelectorAll('button, div[class*="btn"], div[class*="rounded"]');
@@ -117,49 +102,66 @@ def execute_renewal(sb, email):
                 }
             }
         """)
-        sb.sleep(6) # 必须等够 6 秒，让 CF 验证码有充足的时间弹出来
+        
+        # 🌟 致命修正：故意等待 3 秒，等那个恶心人的广告护盾弹出来！
+        print("⏳ 等待 3 秒，诱导敌方延时广告护盾弹窗...")
+        sb.sleep(3) 
+
+        # ================= 🚨 破盾打击 🚨 =================
+        print("🧹 检测到护盾展开！启动高频激光进行物理消融...")
+        sb.execute_script("""
+            var els = document.querySelectorAll('*');
+            for(var i=0; i<els.length; i++) {
+                var t = (els[i].innerText || "").toUpperCase().trim();
+                if(t.includes('DOWNLOAD EXTENSION') || t === 'START NOW' || t.includes('TRUSTED SPOT') || t.includes('NOT SELL OR SHARE')) {
+                    // 暴力穿透：将广告文本本身，以及它外面的 6 层外壳全部物理隐形！
+                    // 绝对不留任何阻挡鼠标点击的遮罩！
+                    var p = els[i];
+                    for(var j=0; j<6; j++) {
+                        if(p) {
+                            try { p.style.display = 'none'; } catch(e){}
+                            p = p.parentElement;
+                        }
+                    }
+                }
+            }
+        """)
+        sb.sleep(3) # 再等 3 秒让护盾散去，CF 彻底暴露
 
         # ================= 🚨 内窥镜刺杀系统 🚨 =================
-        print("🛡️ 启动内窥镜：钻入所有画框寻找 CF 核心组件...")
+        print("🛡️ 护盾已破！启动内窥镜寻找并刺杀 CF 核心...")
         
-        # 杀招 A：先让 UC 外挂盲扫一波
-        try:
-            sb.uc_gui_click_captcha()
-        except:
-            pass
-        sb.sleep(2)
-
-        # 杀招 B：破门查水表 (The Ultimate Fallback)
         try:
             iframes = sb.find_elements("iframe")
             cf_found = False
             for frame in iframes:
                 try:
-                    # 不管三七二十一，直接钻进去！
-                    sb.switch_to_frame(frame)
+                    # 先把每个可能的画框强制拖到中央
+                    sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", frame)
+                    sb.sleep(0.5)
                     
-                    # 在画框内部寻找 CF 特有的器官标签
+                    sb.switch_to_frame(frame)
+                    # 在画框内部寻找 CF 专有器官
                     if sb.is_element_present('.mark, .ctp-checkbox-label, input[type="checkbox"], #challenge-stage'):
                         print("💥 确认目标！已在画框内部发现 CF 核心，执行贴脸爆头！")
                         cf_found = True
                         
-                        # 确保它在可视范围内
-                        sb.execute_script("document.body.scrollIntoView({block: 'center'});")
-                        sb.sleep(1)
-                        
-                        # 对准复选框开火
+                        # 没有了外层广告护盾的遮挡，这次的物理点击绝对能命中！
                         try: sb.click('.mark, .ctp-checkbox-label, input[type="checkbox"]', timeout=1)
                         except: sb.click('body', timeout=1)
                         
-                    # 查完退出画框
                     sb.switch_to_default_content()
                     
                     if cf_found:
-                        break # 击毙一个就收工，不再查后面的画框了
+                        break # 杀完一个 CF 就退出本次搜索
                 except Exception as inner_e:
                     sb.switch_to_default_content()
         except Exception as e:
             print(f"画框遍历异常: {e}")
+
+        # 顺手补一发原生外挂兜底
+        try: sb.uc_gui_click_captcha()
+        except: pass
 
         print("⏳ 破甲弹已倾泻，等待 CF 服务器转圈验证 (6秒)...")
         sb.sleep(6)
