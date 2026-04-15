@@ -65,7 +65,7 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """物理除灵版：无视幽灵画框，精准判定战果！"""
+    """修复雷达致盲漏洞，精准锁定真实按钮与广告！"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
@@ -73,19 +73,21 @@ def execute_renewal(sb, email):
     print("🔄 开启最终物理强袭循环 (最多尝试 8 波)...")
     success = False
 
-    # 依然是完美发挥作用的战前清场程序
+    # 🌟 修复战前清场程序：加入文本长度限制，防止误伤整个网页(body)！
     cleansing_js = """
         document.querySelectorAll('iframe').forEach(f => {
             if (f.offsetWidth > 380 || f.offsetHeight > 380) f.remove();
         });
         document.querySelectorAll('*').forEach(e => {
-            let t = (e.innerText || '').toUpperCase().replace(/\\s+/g, '');
-            if(t.includes('DOWNLOADEXTENSION') || t.includes('STARTNOW') || t.includes('TRUSTEDSPOT') || t.includes('2EASYSTEPS')) {
+            let rawText = e.innerText || '';
+            let t = rawText.toUpperCase().replace(/\\s+/g, '');
+            // 必须小于 300 个字符，防止匹配到整个外层容器导致全页面隐藏
+            if((t.includes('DOWNLOADEXTENSION') || t.includes('STARTNOW') || t.includes('TRUSTEDSPOT') || t.includes('2EASYSTEPS')) && rawText.length < 300) {
                 try { e.style.display = 'none'; } catch(err){}
                 try { if(e.parentElement) e.parentElement.style.display = 'none'; } catch(err){}
                 try { if(e.parentElement.parentElement) e.parentElement.parentElement.style.display = 'none'; } catch(err){}
             }
-            if(t === 'CLOSE') {
+            if(t === 'CLOSE' && rawText.length < 20) {
                 try{ e.click(); e.style.display = 'none'; }catch(err){}
             }
         });
@@ -102,11 +104,13 @@ def execute_renewal(sb, email):
     for attempt in range(8):
         print(f"\n--- 🚀 第 {attempt + 1} 波攻势 ---")
 
-        # 🌟 致命修正 1：精准判定真实按钮是否存在，绝不被 FAQ 文本误导！
+        # 🌟 致命修正 1：扩大搜索范围至 a 和 span，并加入长度限制精准锁定按钮
         btn_exists = sb.execute_script("""
-            var btns = document.querySelectorAll('button, div[class*="btn"], div[class*="rounded"]');
-            for (var i = 0; i < btns.length; i++) {
-                if (btns[i].innerText && btns[i].innerText.includes('HOURS')) {
+            var els = document.querySelectorAll('button, a, span, div');
+            for (var i = 0; i < els.length; i++) {
+                var txt = els[i].innerText || "";
+                // 确保它是一个短文本按钮，而不是包含了 HOURS 这个词的整个网页容器
+                if (txt.toUpperCase().includes('HOURS') && txt.length < 30) {
                     return true;
                 }
             }
@@ -124,11 +128,12 @@ def execute_renewal(sb, email):
 
         print("🎯 锁定并点击续期按钮 (+8 HOURS)...")
         sb.execute_script("""
-            var btns = document.querySelectorAll('button, div[class*="btn"], div[class*="rounded"]');
-            for (var i = 0; i < btns.length; i++) {
-                if (btns[i].innerText && btns[i].innerText.includes('HOURS')) {
-                    btns[i].scrollIntoView({block: "center"});
-                    btns[i].click();
+            var els = document.querySelectorAll('button, a, span, div');
+            for (var i = 0; i < els.length; i++) {
+                var txt = els[i].innerText || "";
+                if (txt.toUpperCase().includes('HOURS') && txt.length < 30) {
+                    els[i].scrollIntoView({block: "center"});
+                    els[i].click();
                     break;
                 }
             }
@@ -154,7 +159,6 @@ def execute_renewal(sb, email):
                     h = frame.size.get('height', 0)
                     
                     if 10 < w < 380 and 10 < h < 380:
-                        # 🌟 致命修正 2：必须是物理可见的实体画框！(过滤掉 CF 注入的隐形探针，彻底告别红字报错)
                         if not frame.is_displayed():
                             continue 
                             
@@ -188,7 +192,7 @@ def execute_renewal(sb, email):
                         except:
                             sb.switch_to_default_content()
 
-                        break # 击毙当前目标即收队
+                        break 
                 except Exception:
                     pass
         except Exception as e:
