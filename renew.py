@@ -65,7 +65,7 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """绝地反击版：破除延时护盾，直接贴脸碎星！"""
+    """降维打击无死角版：无视换行符伪装，绝对物理除草！"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
@@ -78,8 +78,39 @@ def execute_renewal(sb, email):
         send_tg_photo(f"⏳ FGH 服务器 41ed8b6e 续期冷却中。", cd_img)
         return True 
 
-    print("🔄 开启内窥镜扫荡循环 (最多尝试 8 波)...")
+    print("🔄 开启最终核平循环 (最多尝试 8 波)...")
     success = False
+
+    # 🌟 核心武器：无死角战术清理炸弹
+    cleansing_js = """
+        // 1. 物理删除所有巨型 iframe (彻底消灭第三方嵌入广告)
+        document.querySelectorAll('iframe').forEach(f => {
+            if (f.offsetWidth > 380 || f.offsetHeight > 380) f.remove();
+        });
+        
+        // 2. 暴力抹除原生流氓元素 (抽干所有空格和换行符，无视排版伪装！)
+        document.querySelectorAll('*').forEach(e => {
+            let t = (e.innerText || '').toUpperCase().replace(/\\s+/g, '');
+            if(t.includes('DOWNLOADEXTENSION') || t.includes('STARTNOW') || t.includes('TRUSTEDSPOT') || t.includes('2EASYSTEPS')) {
+                try { e.style.display = 'none'; } catch(err){}
+                try { if(e.parentElement) e.parentElement.style.display = 'none'; } catch(err){}
+                try { if(e.parentElement.parentElement) e.parentElement.parentElement.style.display = 'none'; } catch(err){}
+            }
+            if(t === 'CLOSE') {
+                try{ e.click(); e.style.display = 'none'; }catch(err){}
+            }
+        });
+        
+        // 3. 终极底线：隐藏所有全屏的高层级幽灵遮罩层 (破除透明防弹玻璃)
+        document.querySelectorAll('div').forEach(d => {
+            let z = window.getComputedStyle(d).zIndex;
+            if (z !== 'auto' && parseInt(z) > 1000) {
+                if (d.offsetWidth > window.innerWidth * 0.7 && d.offsetHeight > window.innerHeight * 0.7) {
+                    d.style.display = 'none';
+                }
+            }
+        });
+    """
 
     for attempt in range(8):
         print(f"\n--- 🚀 第 {attempt + 1} 波攻势 ---")
@@ -90,7 +121,12 @@ def execute_renewal(sb, email):
             success = True
             break
 
-        # 1. 直接触发陷阱：寻找并点击续期按钮
+        # 战前清理：先把页面上现存的广告扫干净
+        print("🧹 战前清理：引爆清除炸弹...")
+        sb.execute_script(cleansing_js)
+        sb.sleep(1)
+
+        # 触发陷阱：点击续期按钮
         print("🎯 锁定并点击续期按钮 (+8 HOURS)...")
         sb.execute_script("""
             var btns = document.querySelectorAll('button, div[class*="btn"], div[class*="rounded"]');
@@ -103,30 +139,14 @@ def execute_renewal(sb, email):
             }
         """)
         
-        # 🌟 致命修正：故意等待 3 秒，等那个恶心人的广告护盾弹出来！
-        print("⏳ 等待 3 秒，诱导敌方延时广告护盾弹窗...")
-        sb.sleep(3) 
+        # 故意等待 4 秒，让点击触发的延时广告或 CF 完全弹出来
+        print("⏳ 等待 4 秒，诱导敌方延时弹窗...")
+        sb.sleep(4) 
 
-        # ================= 🚨 破盾打击 🚨 =================
-        print("🧹 检测到护盾展开！启动高频激光进行物理消融...")
-        sb.execute_script("""
-            var els = document.querySelectorAll('*');
-            for(var i=0; i<els.length; i++) {
-                var t = (els[i].innerText || "").toUpperCase().trim();
-                if(t.includes('DOWNLOAD EXTENSION') || t === 'START NOW' || t.includes('TRUSTED SPOT') || t.includes('NOT SELL OR SHARE')) {
-                    // 暴力穿透：将广告文本本身，以及它外面的 6 层外壳全部物理隐形！
-                    // 绝对不留任何阻挡鼠标点击的遮罩！
-                    var p = els[i];
-                    for(var j=0; j<6; j++) {
-                        if(p) {
-                            try { p.style.display = 'none'; } catch(e){}
-                            p = p.parentElement;
-                        }
-                    }
-                }
-            }
-        """)
-        sb.sleep(3) # 再等 3 秒让护盾散去，CF 彻底暴露
+        # 战间清理：广告弹出来了？那就再炸一次！
+        print("🧹 战间清理：秒杀因点击而弹出的护盾...")
+        sb.execute_script(cleansing_js)
+        sb.sleep(1)
 
         # ================= 🚨 内窥镜刺杀系统 🚨 =================
         print("🛡️ 护盾已破！启动内窥镜寻找并刺杀 CF 核心...")
@@ -136,24 +156,27 @@ def execute_renewal(sb, email):
             cf_found = False
             for frame in iframes:
                 try:
-                    # 先把每个可能的画框强制拖到中央
-                    sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", frame)
-                    sb.sleep(0.5)
-                    
-                    sb.switch_to_frame(frame)
-                    # 在画框内部寻找 CF 专有器官
-                    if sb.is_element_present('.mark, .ctp-checkbox-label, input[type="checkbox"], #challenge-stage'):
-                        print("💥 确认目标！已在画框内部发现 CF 核心，执行贴脸爆头！")
-                        cf_found = True
+                    w = frame.size.get('width', 0)
+                    h = frame.size.get('height', 0)
+                    # 经历过两轮大尺寸清除，存活下来的只可能是小画框
+                    if 10 < w < 380 and 10 < h < 380:
+                        sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", frame)
+                        sb.sleep(0.5)
                         
-                        # 没有了外层广告护盾的遮挡，这次的物理点击绝对能命中！
-                        try: sb.click('.mark, .ctp-checkbox-label, input[type="checkbox"]', timeout=1)
-                        except: sb.click('body', timeout=1)
+                        sb.switch_to_frame(frame)
+                        # 在画框内部寻找 CF 专有器官
+                        if sb.is_element_present('.mark, .ctp-checkbox-label, input[type="checkbox"], #challenge-stage'):
+                            print("💥 确认目标！已在画框内部发现 CF 核心，执行贴脸爆头！")
+                            cf_found = True
+                            
+                            # 没有了遮挡，这次的物理点击绝对能爆头
+                            try: sb.click('.mark, .ctp-checkbox-label, input[type="checkbox"]', timeout=1)
+                            except: sb.click('body', timeout=1)
+                            
+                        sb.switch_to_default_content()
                         
-                    sb.switch_to_default_content()
-                    
-                    if cf_found:
-                        break # 杀完一个 CF 就退出本次搜索
+                        if cf_found:
+                            break # 杀完一个就收工
                 except Exception as inner_e:
                     sb.switch_to_default_content()
         except Exception as e:
@@ -166,7 +189,7 @@ def execute_renewal(sb, email):
         print("⏳ 破甲弹已倾泻，等待 CF 服务器转圈验证 (6秒)...")
         sb.sleep(6)
 
-        # 5. 点击可能出现的最终确认
+        # 点击可能出现的最终确认
         print("✅ 尝试确认可能弹出的最终授权框...")
         sb.execute_script("""
             var btns = document.querySelectorAll('button');
