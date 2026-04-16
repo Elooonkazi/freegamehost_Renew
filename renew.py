@@ -65,37 +65,26 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """👑 隐秘暗杀版：CSS全局屏蔽广告，动态重锁目标规避 Stale Element"""
+    """🕊️ 温和清障版：停止乱杀 iframe，让 CF 自然生长后执行三连发"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
 
-    # 🚀 优雅的全局屏蔽术：不再暴力 remove，而是用 CSS 让它们在视觉上蒸发
-    stealth_nuke_js = """
-        // 1. 注入全局 CSS：直接从根本上隐藏所有非 CF 的 iframe
-        if (!document.getElementById('anti-ad-style')) {
-            let style = document.createElement('style');
-            style.id = 'anti-ad-style';
-            style.innerHTML = `
-                iframe:not([src*="cloudflare"]):not([src*="turnstile"]) { display: none !important; width: 0 !important; height: 0 !important; }
-            `;
-            document.head.appendChild(style);
-        }
-
-        // 2. 隐藏那些明显的弹窗和关闭按钮
+    # 🚀 温和清障术：绝不碰任何 iframe，避免误杀还在发育中的 CF 验证框
+    safe_nuke_js = """
+        // 1. 隐藏多余的文字弹窗
         document.querySelectorAll('a, button, span, div').forEach(el => {
             let txt = (el.innerText || '').trim().toUpperCase();
-            if (txt === 'CLOSE' || txt === 'X' || txt.includes('DO NOT SELL') || txt.includes('PERSONAL INFORMATION')) {
+            if (txt === 'CLOSE' || txt === 'X' || txt.includes('DO NOT SELL') || txt.includes('PERSONAL INFORMATION') || txt.includes('2 EASY STEPS')) {
                 el.style.display = 'none';
             }
         });
-        
-        // 3. 抹杀底部的“白色幽灵”（图1中的白色横幅）
+
+        // 2. 仅隐藏底部巨大且恶心的白色容器
         document.querySelectorAll('div').forEach(d => {
             let style = window.getComputedStyle(d);
-            // 如果它是悬浮/绝对定位，且背景是白色的，直接隐形
-            if (style.position === 'fixed' || style.position === 'absolute') {
-                if (style.backgroundColor.includes('255, 255, 255') || style.zIndex > 100) {
+            if ((style.position === 'fixed' || style.position === 'absolute') && style.bottom === '0px') {
+                if (d.offsetWidth > window.innerWidth * 0.5 && (style.backgroundColor.includes('255, 255, 255') || parseInt(style.zIndex) > 10)) {
                     d.style.display = 'none';
                 }
             }
@@ -105,8 +94,11 @@ def execute_renewal(sb, email):
     print("🔄 开始寻找并点击续期按钮...")
     success = False
 
-    sb.execute_script(stealth_nuke_js)
+    sb.execute_script(safe_nuke_js)
     sb.sleep(2)
+
+    # 强行把页面卷到中间偏上，防止点击不到
+    sb.execute_script("window.scrollTo(0, 300);")
 
     clicked = sb.execute_script("""
         var els = document.querySelectorAll('button, a, div[role="button"]');
@@ -114,8 +106,9 @@ def execute_renewal(sb, email):
             var txt = (els[i].innerText || "").toUpperCase().trim();
             if ((txt.includes('HOURS') || txt.includes('RENEW') || txt.includes('ADD TIME')) 
                 && !txt.includes('UPGRADE') && !txt.includes('DELETE') && txt.length > 0 && txt.length < 30) {
-                els[i].scrollIntoView({block: "center"});
-                els[i].click();
+                var target = els[i];
+                target.scrollIntoView({block: "center", behavior: "instant"});
+                target.click();
                 return true;
             }
         }
@@ -127,43 +120,52 @@ def execute_renewal(sb, email):
         success = True
     else:
         print("🎯 续期按钮已点击！")
-        print("⏳ 等待敌方阵列与 CF 验证框展开 (6秒)...")
-        sb.sleep(6) 
+        print("⏳ 停止一切干扰，静静等待 CF 验证框自然生长 (8秒)...")
+        sb.sleep(8) 
 
-        print("🧹 战中清理：粉碎白色幽灵与隐私弹窗，确保屏幕绝对整洁...")
-        sb.execute_script(stealth_nuke_js)
+        print("🧹 战中清理：轻轻扫除弹出的白框...")
+        sb.execute_script(safe_nuke_js)
         sb.sleep(2)
 
         # ================= 🚨 破解 Cloudflare Turnstile 🚨 =================
-        print("🛡️ 锁定 CF 验证框！执行防 Stale Element 战术...")
+        print("🛡️ 锁定 CF 验证框！执行最稳妥的 ActionChains 内部坐标打击...")
         try:
-            # 👁️ 强制视角锁定：确保视野在网页中间
+            # 强行校准视角，寻找包含关键文本的区块
             sb.execute_script("""
                 var divs = document.querySelectorAll('div');
                 for(var i=0; i<divs.length; i++) {
                     var text = (divs[i].innerText || "").toUpperCase();
-                    if(text.includes('SECURITY CHECK') || text.includes('VERIFY YOU ARE HUMAN')) {
+                    if(text.includes('SECURITY CHECK') || text.includes('VERIFY YOU ARE HUMAN') || text.includes('RENEW SERVER')) {
                         divs[i].scrollIntoView({block: 'center'});
                         break;
                     }
                 }
+                window.scrollBy(0, -150); // 稍微往上移一点点，防止被导航栏遮挡
             """)
             sb.sleep(2)
 
-            # 【重要修复】：废弃会引发重载的“强制显影术”，直接寻找并清障
             iframes = sb.driver.find_elements("tag name", "iframe")
             target_frame = None
-            for f in iframes:
+            
+            print(f"👀 页面上目前共有 {len(iframes)} 个 iframe，正在筛选...")
+            for idx, f in enumerate(iframes):
                 w = f.size.get('width', 0)
                 h = f.size.get('height', 0)
-                if 200 <= w <= 400 and 50 <= h <= 200:
+                # 宽容的尺寸匹配：既然我们没删其他 iframe，就靠尺寸严选 CF
+                if 200 <= w <= 450 and 40 <= h <= 250:
                     target_frame = f
+                    print(f"🎯 确认目标 iframe [{idx}] (尺寸 {w}x{h})")
                     break
                     
             if not target_frame:
-                raise Exception("页面上未能找到符合 CF 尺寸的 iframe。")
+                raise Exception("页面上没找到符合尺寸的 iframe。可能是按钮没点成功，或者网络卡顿没加载出来。")
 
-            # 🔪 像素级清障（仅删除挡在前面的透明玻璃，绝不修改 iframe 本身）
+            # 📸 [调试神器] 截取开枪前的纯净视野
+            aim_img = f"{email}_aiming.png"
+            sb.save_screenshot(aim_img)
+            send_tg_photo(f"📸 狙击手已就位，防抖开枪前快照：", aim_img)
+
+            # 🔪 像素级清障（仅移除挡在枪口上的那一层透明薄膜，绝不改动 iframe 自身导致崩溃）
             sb.execute_script("""
                 var iframe = arguments[0];
                 var rect = iframe.getBoundingClientRect();
@@ -176,41 +178,23 @@ def execute_renewal(sb, email):
             """, target_frame)
             sb.sleep(1)
 
-            # 📸 [调试神器] 截取开枪前的纯净视野
-            aim_img = f"{email}_aiming.png"
-            sb.save_screenshot(aim_img)
-            send_tg_photo(f"📸 狙击手已就位，防抖开枪前快照：", aim_img)
-
-            # 【核心修复】：为了防止上一秒的清障导致 DOM 刷新，我们在此刻**重新抓取一次 iframe**！
-            iframes = sb.driver.find_elements("tag name", "iframe")
-            fresh_target = None
-            for f in iframes:
-                w = f.size.get('width', 0)
-                h = f.size.get('height', 0)
-                if 200 <= w <= 400 and 50 <= h <= 200:
-                    fresh_target = f
-                    break
-
-            if fresh_target:
-                from selenium.webdriver.common.action_chains import ActionChains
-                actions = ActionChains(sb.driver)
-                
-                w = fresh_target.size.get('width', 300)
-                if w > 500: w = 300 
-                
-                offset_1 = -int(w * 0.40)
-                offset_2 = -int(w * 0.35)
-                offset_3 = -int(w * 0.30)
-                
-                print(f"💥 目标已重锁！启动三连发霰弹扫射！偏移量: {offset_1}, {offset_2}, {offset_3}")
-                actions.move_to_element(fresh_target).move_by_offset(offset_1, 0).click().pause(0.5)\
-                       .move_to_element(fresh_target).move_by_offset(offset_2, 0).click().pause(0.5)\
-                       .move_to_element(fresh_target).move_by_offset(offset_3, 0).click().perform()
-                
-                print("⏳ 弹夹打空，等待 8 秒校验响应...")
-                sb.sleep(8)
-            else:
-                print("⚠️ 重新抓取目标失败，目标已逃逸！")
+            from selenium.webdriver.common.action_chains import ActionChains
+            actions = ActionChains(sb.driver)
+            
+            w = target_frame.size.get('width', 300)
+            if w > 500: w = 300 
+            
+            offset_1 = -int(w * 0.40)
+            offset_2 = -int(w * 0.35)
+            offset_3 = -int(w * 0.30)
+            
+            print(f"💥 启动三连发霰弹扫射！偏移量: {offset_1}, {offset_2}, {offset_3}")
+            actions.move_to_element(target_frame).move_by_offset(offset_1, 0).click().pause(0.5)\
+                   .move_to_element(target_frame).move_by_offset(offset_2, 0).click().pause(0.5)\
+                   .move_to_element(target_frame).move_by_offset(offset_3, 0).click().perform()
+            
+            print("⏳ 弹夹打空，等待 8 秒校验响应...")
+            sb.sleep(8)
             
         except Exception as e:
             print(f"⚠️ 坐标打击异常: {e}")
