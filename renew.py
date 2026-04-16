@@ -66,28 +66,24 @@ def inject_vip_cookies_via_cdp(sb):
 
 def execute_renewal(sb, email):
     """
-    极速爆破版：
-    1. 秒点续期按钮。
-    2. 活体检测 CF 真身，无视隐形替身。
-    3. 坐标偏左爆破，截图撤退。
+    极简主线版：秒点续期 -> 锁定 CF 特征 -> 强制交互爆破 -> 截图退出
     """
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(5)
 
-    # 🚀 进场第一秒：只点掉明确阻挡点击的 Close 按钮
-    nuke_ads_js = """
+    # 🚀 附带广告扫描：顺手点掉明确挡路的 Close 按钮
+    sb.execute_script("""
         document.querySelectorAll('button, a, span, div[role="button"]').forEach(el => {
             let txt = (el.innerText || '').trim().toUpperCase();
             if (txt === 'CLOSE' || txt === 'X' || txt.includes('DISMISS')) {
                 try { el.click(); } catch(e){}
             }
         });
-    """
-    sb.execute_script(nuke_ads_js)
+    """)
 
-    # 🚀 第一时间寻找并点击续期按钮
-    print("🎯 正在执行：第一时间锁定并点击续期按钮...")
+    # 🚀 步骤一：第一时间寻找并点击续期按钮
+    print("🎯 第一时间锁定并点击续期按钮...")
     button_clicked = sb.execute_script("""
         var els = document.querySelectorAll('button, a, div[role="button"]');
         for (var i = 0; i < els.length; i++) {
@@ -104,59 +100,56 @@ def execute_renewal(sb, email):
     if button_clicked:
         print("✅ 续期按钮已点击！等待 CF 验证框展开 (6秒)...")
         sb.sleep(6)
-        # 弹窗可能会在点击后出现，再点一次 Close
-        sb.execute_script(nuke_ads_js)
-        sb.sleep(1)
 
-        # 🚀 解决 CF 人机验证（核心目标）
-        print("🛡️ 正在执行：寻找并点击 CF 白框...")
+        # 🚀 步骤二：优先解决 CF 人机验证
+        print("🛡️ 正在执行：精准寻找并破解 CF 验证框...")
         try:
-            iframes = sb.driver.find_elements("tag name", "iframe")
+            # 直接按“血统”查找：寻找 src 里包含 cloudflare 或 turnstile 的 iframe
+            cf_iframes = sb.driver.find_elements("css selector", 'iframe[src*="cloudflare"], iframe[src*="turnstile"], iframe[title*="Cloudflare"]')
             target_frame = None
             
-            for f in iframes:
-                try:
-                    # 【核心修复】：活体检测！只要是隐藏的，直接跳过！
-                    if not f.is_displayed():
-                        continue
-                        
-                    w = f.size.get('width', 0)
-                    h = f.size.get('height', 0)
-                    # CF 框的真实尺寸通常在这个范围
-                    if 250 <= w <= 350 and 50 <= h <= 150:
-                        target_frame = f
-                        break
-                except:
-                    pass
+            for f in cf_iframes:
+                w = f.size.get('width', 0)
+                h = f.size.get('height', 0)
+                # 只要有实体尺寸（宽度大于50），排除 0x0 的隐藏代码，就是真实目标！
+                if w > 50 and h > 20:
+                    target_frame = f
+                    break
             
             if target_frame:
                 w = target_frame.size['width']
                 h = target_frame.size['height']
-                print(f"💥 成功锁定【可见的】CF 真身 ({w}x{h})")
+                print(f"💥 成功锁定 CF 真身 (尺寸 {w}x{h})")
                 
-                # 把白框居中，防止在屏幕边缘点不到
                 sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", target_frame)
-                sb.sleep(2)
+                sb.sleep(1)
                 
-                # 使用 ActionChains 执行相对坐标点击
+                # 🔪 强制交互术：强行解除底层限制，防止报 not interactable 错误
+                sb.execute_script("""
+                    arguments[0].style.visibility = 'visible';
+                    arguments[0].style.opacity = '1';
+                    arguments[0].style.pointerEvents = 'auto';
+                """, target_frame)
+                sb.sleep(1)
+                
+                # 启动内部坐标系精确点击
                 from selenium.webdriver.common.action_chains import ActionChains
                 actions = ActionChains(sb.driver)
                 
-                # 往左侧偏移宽度的 35%，正好是那个复选框的位置
                 offset_x = -int(w * 0.35)
                 actions.move_to_element(target_frame).move_by_offset(offset_x, 0).click().perform()
                 
-                print(f"🎯 鼠标已点击复选框 (偏移量 {offset_x})，静候 8 秒等待绿勾...")
+                print(f"🎯 鼠标已精准点击复选框 (偏移量 {offset_x})，静候 8 秒等待绿勾...")
                 sb.sleep(8)
             else:
-                print("❓ 扫遍全屏，没有发现处于可见状态的 CF 验证框。")
+                print("❓ 扫描完毕，页面上并未生成 CF 验证框 (可能已免验证)。")
                 
         except Exception as e:
             print(f"❌ CF 坐标打击发生异常: {e}")
     else:
         print("⚠️ 未发现续期按钮，可能已处于冷却中。")
 
-    # 🚀 任务结束，截图撤退
+    # 🚀 步骤三：截图撤退
     print("📸 任务流程结束，正在截图并退出...")
     final_img = f"{email}_process.png"
     sb.save_screenshot(final_img)
