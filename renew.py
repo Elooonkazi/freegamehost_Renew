@@ -65,42 +65,32 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """终极实战版本：提前装填弹药 + 抹除广告外层白框躯壳"""
+    """最终稳定版：弃用物理鼠标，采用 ActionChains 元素内坐标打击 + 像素级清障"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
 
-    # 🚀 智能防空火炮 JS：增加对“底部固定容器(躯壳)”的连根拔起逻辑
+    # 🚀 智能防空火炮 JS：加入了扫除底部无用白底横幅的逻辑
     nuke_ads_js = """
-        // 1. 常规清理：点击所有明确的 Close 按钮
         document.querySelectorAll('a, button, span, div').forEach(el => {
             let txt = (el.innerText || '').trim().toUpperCase();
             if (txt === 'CLOSE' || txt === 'X') { try { el.click(); } catch(e){} }
         });
         
-        // 2. 核心：按尺寸识别 iframe (保护小尺寸 CF，杀大尺寸广告)
         document.querySelectorAll('iframe').forEach(f => {
-            if (f.offsetWidth > 0 && f.offsetWidth <= 400 && f.offsetHeight > 0 && f.offsetHeight <= 120) {
-                return; 
-            }
+            if (f.offsetWidth > 0 && f.offsetWidth <= 400 && f.offsetHeight > 0 && f.offsetHeight <= 120) return; 
             let src = (f.src || '').toLowerCase();
             if (!src.includes('cloudflare') && !src.includes('turnstile')) {
                 try { f.remove(); } catch(e){}
             }
         });
         
-        // 3. 抹除躯壳：强制剥离高层级蒙层，以及固定在底部的可疑白色容器
+        // 扫除底部遗留的巨大白色躯壳框
         document.querySelectorAll('div').forEach(d => {
-            let style = window.getComputedStyle(d);
-            // 如果它固定在底部 (通常是底部横幅广告的容器)
-            if ((style.position === 'fixed' || style.position === 'absolute') && style.bottom === '0px') {
-                if (!d.innerHTML.includes('cloudflare') && !d.innerHTML.includes('turnstile')) {
-                    try { d.remove(); } catch(e){}
-                }
-            }
-            // 如果层级特别高且面积巨大
-            if (style.zIndex !== 'auto' && parseInt(style.zIndex) > 900) {
-                if (d.offsetWidth > window.innerWidth * 0.5 && d.offsetHeight > window.innerHeight * 0.5) {
+            let rect = d.getBoundingClientRect();
+            // 如果它很宽，且在屏幕中下方
+            if (rect.width > window.innerWidth * 0.7 && rect.height > 50 && rect.top > window.innerHeight * 0.5) {
+                if (!d.innerHTML.includes('cloudflare') && !d.innerHTML.includes('turnstile') && !d.innerHTML.includes('RENEW')) {
                     try { d.remove(); } catch(e){}
                 }
             }
@@ -113,7 +103,6 @@ def execute_renewal(sb, email):
     sb.execute_script(nuke_ads_js)
     sb.sleep(2)
 
-    # 🎯 锁定并点击目标按钮
     clicked = sb.execute_script("""
         var els = document.querySelectorAll('button, a, div[role="button"]');
         for (var i = 0; i < els.length; i++) {
@@ -136,35 +125,50 @@ def execute_renewal(sb, email):
         print("⏳ 等待敌方阵列与 CF 验证框展开 (6秒)...")
         sb.sleep(6) 
 
-        # 🛡️ 战中清理：保留小尺寸 CF，杀掉大尺寸广告及白框
-        print("🧹 战中清理：启动尺寸鉴别级清场，确保视野绝对清晰...")
+        print("🧹 战中清理：粉碎遗留躯壳，确保屏幕整洁...")
         sb.execute_script(nuke_ads_js)
         sb.sleep(2)
 
-        # ================= 🚨 破解 Cloudflare Turnstile 🚨 =================
-        print("🛡️ 呼叫原生穿甲弹 (由于已在 YAML 预装 pyautogui，此次将瞬间击发)...")
+        # ================= 🚨 破解 Cloudflare Turnstile (内部坐标系版本) 🚨 =================
+        print("🛡️ 锁定 CF 验证框！停用不稳定的物理鼠标，启动内部元素坐标精准打击...")
         try:
-            sb.uc_gui_click_captcha()
-            print("⏳ 穿甲弹已发射，等待 CF 服务器校验响应 (8秒)...")
+            # 找到 CF iframe
+            cf_iframe = sb.driver.find_element("css selector", 'iframe[src*="cloudflare"], iframe[src*="turnstile"], iframe[title*="Cloudflare"]')
+            
+            # 将目标滚动到屏幕正中央
+            sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", cf_iframe)
+            sb.sleep(2)
+            
+            # 🔪 像素级清障：检测 CF 勾选框正上方是否还有透明蒙层，有的话直接删掉
+            sb.execute_script("""
+                var iframe = arguments[0];
+                var rect = iframe.getBoundingClientRect();
+                // 瞄准 iframe 偏左侧 (checkbox的所在地)
+                var x = rect.left + 30; 
+                var y = rect.top + (rect.height / 2);
+                var overEl = document.elementFromPoint(x, y);
+                // 如果覆盖在这个像素点上的不是 iframe 本身，且不是底层 body，干掉它！
+                if (overEl && overEl !== iframe && overEl.tagName !== 'BODY' && overEl.tagName !== 'HTML') {
+                    overEl.remove();
+                }
+            """, cf_iframe)
+            sb.sleep(1)
+
+            # 🎯 发动内部坐标点击
+            from selenium.webdriver.common.action_chains import ActionChains
+            actions = ActionChains(sb.driver)
+            w = cf_iframe.size.get('width', 300)
+            
+            # move_to_element 会把准星移到元素的【正中心】
+            # 然后 move_by_offset 向左偏移 (-宽度的35%)，精准停在方框上，然后扣动扳机
+            offset_x = -int(w * 0.35)
+            actions.move_to_element(cf_iframe).move_by_offset(offset_x, 0).click().perform()
+            
+            print(f"🎯 内部坐标打击完成 (横向偏移 {offset_x})！等待 8 秒校验...")
             sb.sleep(8)
+            
         except Exception as e:
-            print(f"⚠️ 原生穿甲弹遇阻: {e}，启动物理坐标盲射...")
-            try:
-                from selenium.webdriver.common.action_chains import ActionChains
-                iframes = sb.find_elements('iframe')
-                for f in iframes:
-                    w = f.size.get('width', 0)
-                    h = f.size.get('height', 0)
-                    if 200 < w < 400 and 40 < h < 120:
-                        sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", f)
-                        sb.sleep(1)
-                        actions = ActionChains(sb.driver)
-                        actions.move_to_element_with_offset(f, -int(w * 0.35), 0).click().perform()
-                        print("🎯 物理盲射命中目标！等待 8 秒...")
-                        sb.sleep(8)
-                        break
-            except Exception as e2:
-                print(f"-> 物理盲射失败: {e2}")
+            print(f"⚠️ 坐标打击异常: {e}")
 
         success = True 
 
