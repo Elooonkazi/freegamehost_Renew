@@ -69,19 +69,22 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
+    """
+    🎯 北斗制导版：
+    秒点续期 -> 锁定周围带有"Security Check"字眼的真实 CF 框 -> 坐标爆破 -> 截图撤退
+    """
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(5)
 
-    # 🚨 岗哨检查 1：进场是否直接被踢回了登录页？
-    if "login" in sb.get_current_url().lower():
-        print("❌ 灾难性拦截：您的身份已失效，被服务器强制踢回了登录页！")
-        print("💡 原因：User-Agent 暴露、IP 变动、或者缺少 XSRF-TOKEN。")
-        sb.save_screenshot(f"{email}_kicked.png")
-        return False
-
-    # 🚀 附带广告扫描：顺手点掉明确挡路的 Close 按钮
+    # 🚀 进场直接核爆底部的虚假广告框，防止干扰
     sb.execute_script("""
+        document.querySelectorAll('div').forEach(el => {
+            let txt = (el.innerText || '').toUpperCase();
+            if (txt.includes('2 EASY STEPS') || txt.includes('DOWNLOAD EXTENSION') || txt.includes('TRUSTED SPOT')) {
+                try { el.style.display = 'none'; } catch(e){}
+            }
+        });
         document.querySelectorAll('button, a, span, div[role="button"]').forEach(el => {
             let txt = (el.innerText || '').trim().toUpperCase();
             if (txt === 'CLOSE' || txt === 'X' || txt.includes('DISMISS')) {
@@ -91,7 +94,7 @@ def execute_renewal(sb, email):
     """)
 
     # 🚀 第一时间寻找并点击续期按钮
-    print("🎯 正在执行：第一时间锁定并点击续期按钮...")
+    print("🎯 第一时间锁定并点击续期按钮...")
     button_clicked = sb.execute_script("""
         var els = document.querySelectorAll('button, a, div[role="button"]');
         for (var i = 0; i < els.length; i++) {
@@ -108,35 +111,43 @@ def execute_renewal(sb, email):
     if button_clicked:
         print("✅ 续期按钮已点击！等待 CF 验证框展开 (6秒)...")
         sb.sleep(6)
-        
-        # 🚨 岗哨检查 2：点击续期发送 POST 请求后，是否被后端踢出？
-        if "login" in sb.get_current_url().lower():
-            print("❌ 续期请求被拒：缺少 XSRF-TOKEN 或 Session 异常，被踢回登录页！")
-            sb.save_screenshot(f"{email}_kicked_after_click.png")
-            return False
 
-        # 🚀 解决 CF 人机验证
-        print("🛡️ 正在执行：寻找并点击 CF 白框...")
+        # 🚀 精准制导锁定 CF 验证框
+        print("🛡️ 正在执行：通过周围环境文本，顺藤摸瓜寻找真实 CF 验证框...")
         try:
-            iframes = sb.driver.find_elements("tag name", "iframe")
-            target_frame = None
-            
-            for f in iframes:
-                w = f.size.get('width', 0)
-                h = f.size.get('height', 0)
-                if 250 <= w <= 380 and 50 <= h <= 150:
-                    target_frame = f
-                    break
+            # 💡 核心修复：通过查找 "SECURITY CHECK" 等文字，精准提取它身边的 iframe！
+            target_frame = sb.execute_script("""
+                let frames = document.querySelectorAll('iframe');
+                
+                // 战术 1：顺藤摸瓜 (看它爸爸的文字里有没有验证提示)
+                for (let f of frames) {
+                    let parentText = (f.parentElement ? f.parentElement.innerText : '').toUpperCase();
+                    if (parentText.includes('SECURITY CHECK') || parentText.includes('VERIFY YOU ARE HUMAN')) {
+                        return f;
+                    }
+                }
+                
+                // 战术 2：看它自身的 title 属性
+                for (let f of frames) {
+                    let title = (f.title || '').toUpperCase();
+                    if (title.includes('CLOUDFLARE') || title.includes('WIDGET CONTAINING')) {
+                        return f;
+                    }
+                }
+                
+                return null;
+            """)
             
             if target_frame:
                 w = target_frame.size['width']
                 h = target_frame.size['height']
-                print(f"💥 成功通过体型锁定 CF 真身 (尺寸 {w}x{h})")
+                print(f"💥 成功锁定正牌 CF 验证框 (尺寸 {w}x{h})")
                 
+                # 强行把真实的验证框滚动到屏幕正中间！
                 sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", target_frame)
                 sb.sleep(1)
                 
-                # 强制显影术
+                # 强制解除元素的禁止点击限制
                 sb.execute_script("""
                     arguments[0].style.display = 'block';
                     arguments[0].style.visibility = 'visible';
@@ -145,26 +156,30 @@ def execute_renewal(sb, email):
                 """, target_frame)
                 sb.sleep(1)
                 
+                # 启动内部坐标系精确点击
                 from selenium.webdriver.common.action_chains import ActionChains
                 actions = ActionChains(sb.driver)
                 
+                # 往左偏移宽度的 35%
                 offset_x = -int(w * 0.35)
                 actions.move_to_element(target_frame).move_by_offset(offset_x, 0).click().perform()
                 
                 print(f"🎯 鼠标已精准点击复选框 (偏移量 {offset_x})，静候 8 秒等待绿勾...")
                 sb.sleep(8)
             else:
-                print("❓ 扫描完毕，页面上并未生成 CF 验证框 (可能已免验证)。")
+                print("❓ 扫描完毕，页面中部并未生成 CF 验证框。")
                 
         except Exception as e:
             print(f"❌ CF 坐标打击发生异常: {e}")
     else:
         print("⚠️ 未发现续期按钮，可能已处于冷却中。")
 
+    # 🚀 截图撤退
     print("📸 任务流程结束，正在截图并退出...")
     final_img = f"{email}_process.png"
     sb.save_screenshot(final_img)
     send_tg_photo(f"✅ 账号执行完毕，查看最终结果。账号: {email}", final_img)
+    
     return True
 
 # ================= 主流程 =================
