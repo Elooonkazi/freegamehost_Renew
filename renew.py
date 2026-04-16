@@ -66,7 +66,8 @@ def inject_vip_cookies_via_cdp(sb):
 
 def execute_renewal(sb, email):
     """
-    极简主线版：秒点续期 -> 锁定 CF 特征 -> 强制交互爆破 -> 截图退出
+    极简主线版 (终极修正)：
+    秒点续期 -> 废弃名字查找，纯靠体型抓出 CF -> 强制交互爆破 -> 截图退出
     """
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
@@ -104,28 +105,29 @@ def execute_renewal(sb, email):
         # 🚀 步骤二：优先解决 CF 人机验证
         print("🛡️ 正在执行：精准寻找并破解 CF 验证框...")
         try:
-            # 直接按“血统”查找：寻找 src 里包含 cloudflare 或 turnstile 的 iframe
-            cf_iframes = sb.driver.find_elements("css selector", 'iframe[src*="cloudflare"], iframe[src*="turnstile"], iframe[title*="Cloudflare"]')
+            # 【核心修正】：废弃按名字查找！直接抓取页面所有 iframe，按尺寸抓人！
+            iframes = sb.driver.find_elements("tag name", "iframe")
             target_frame = None
             
-            for f in cf_iframes:
+            for f in iframes:
                 w = f.size.get('width', 0)
                 h = f.size.get('height', 0)
-                # 只要有实体尺寸（宽度大于50），排除 0x0 的隐藏代码，就是真实目标！
-                if w > 50 and h > 20:
+                # CF 框的真实尺寸通常在这个范围 (宽度 250~380，高度 50~150)
+                if 250 <= w <= 380 and 50 <= h <= 150:
                     target_frame = f
                     break
             
             if target_frame:
                 w = target_frame.size['width']
                 h = target_frame.size['height']
-                print(f"💥 成功锁定 CF 真身 (尺寸 {w}x{h})")
+                print(f"💥 成功通过体型锁定 CF 真身 (尺寸 {w}x{h})")
                 
                 sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", target_frame)
                 sb.sleep(1)
                 
-                # 🔪 强制交互术：强行解除底层限制，防止报 not interactable 错误
+                # 🔪 强制交互术：强行解除底层限制，让隐形的替身也得显形接子弹
                 sb.execute_script("""
+                    arguments[0].style.display = 'block';
                     arguments[0].style.visibility = 'visible';
                     arguments[0].style.opacity = '1';
                     arguments[0].style.pointerEvents = 'auto';
@@ -142,7 +144,7 @@ def execute_renewal(sb, email):
                 print(f"🎯 鼠标已精准点击复选框 (偏移量 {offset_x})，静候 8 秒等待绿勾...")
                 sb.sleep(8)
             else:
-                print("❓ 扫描完毕，页面上并未生成 CF 验证框 (可能已免验证)。")
+                print("❓ 扫描完毕，页面上并未生成符合 CF 尺寸的 iframe。")
                 
         except Exception as e:
             print(f"❌ CF 坐标打击发生异常: {e}")
