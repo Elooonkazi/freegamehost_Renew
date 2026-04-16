@@ -65,14 +65,13 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """👑 最终加冕版：“唯一幸存者”法则锁定 CF，无视尺寸变形"""
+    """👑 最终破幻版：无视系统可见性伪装，强制显影并精准打击"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
 
     # 🚀 智能防空火炮 JS：清理弹窗、广告、外壳
     nuke_ads_js = """
-        // 1. 斩杀所有包含明显关闭/隐私字眼的弹窗
         document.querySelectorAll('a, button, span, div').forEach(el => {
             let txt = (el.innerText || '').trim().toUpperCase();
             if (txt === 'CLOSE' || txt === 'X' || txt.includes('DO NOT SELL') || txt.includes('PERSONAL INFORMATION') || txt.includes('2 EASY STEPS')) {
@@ -81,7 +80,6 @@ def execute_renewal(sb, email):
             }
         });
         
-        // 2. 清除所有尺寸过大的巨型广告 iframe
         document.querySelectorAll('iframe').forEach(f => {
             if (f.offsetWidth > 400 || f.offsetHeight > 200) {
                 let src = (f.src || '').toLowerCase();
@@ -91,7 +89,6 @@ def execute_renewal(sb, email):
             }
         });
         
-        // 3. 扫除底部遗留的巨大躯壳白框
         document.querySelectorAll('div').forEach(d => {
             let rect = d.getBoundingClientRect();
             if (rect.width > window.innerWidth * 0.7 && rect.height > 50 && rect.top > window.innerHeight * 0.5) {
@@ -134,33 +131,41 @@ def execute_renewal(sb, email):
         sb.execute_script(nuke_ads_js)
         sb.sleep(2)
 
-        # ================= 🚨 破解 Cloudflare Turnstile ("唯一幸存者"打击) 🚨 =================
-        print("🛡️ 锁定 CF 验证框！因为广告全被清理，直接抓取剩下的唯一存活 iframe！")
+        # ================= 🚨 破解 Cloudflare Turnstile 🚨 =================
+        print("🛡️ 锁定 CF 验证框！无视 is_displayed 伪装，只认尺寸！")
         try:
             iframes = sb.driver.find_elements("tag name", "iframe")
             target_frame = None
             
-            # 战报输出：看看底层到底返回了什么畸形尺寸
             for idx, f in enumerate(iframes):
                 w = f.size.get('width', 0)
                 h = f.size.get('height', 0)
-                visible = f.is_displayed()
-                print(f"👀 探雷器发现 iframe [{idx}]: 可见状态={visible}, 尺寸={w}x{h}")
-                
-                # 只要它是可见的，且不是一个 0x0 的隐藏像素点，我们就当它是 CF！
-                if visible and w > 10 and h > 10:
+                # 🔪 致命改动：移除了 visible 检查。只要不是 0x0 的隐藏像素，就是它！
+                if w > 10 and h > 10:
                     target_frame = f
-                    print(f"🎯 锁定目标 iframe [{idx}] 作为打击对象！")
+                    print(f"🎯 破除伪装！强行锁定 iframe [{idx}] (尺寸 {w}x{h}) 作为打击对象！")
                     break
                     
             if not target_frame:
-                raise Exception("活见鬼，页面上没有抓到任何可见的 iframe。")
+                raise Exception("活见鬼，页面上连一个有实体的 iframe 都没有了。")
 
-            # 将目标滚动到屏幕正中央
-            sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", target_frame)
+            # 🔪 强制显影术：如果 Selenium 认为它不可见，ActionChains 可能会拒绝点击。
+            # 我们用 JS 强行把它和它的父节点属性全部改写为绝对可见！
+            sb.execute_script("""
+                var iframe = arguments[0];
+                iframe.style.display = 'block';
+                iframe.style.visibility = 'visible';
+                iframe.style.opacity = '1';
+                if(iframe.parentElement) {
+                    iframe.parentElement.style.display = 'block';
+                    iframe.parentElement.style.visibility = 'visible';
+                    iframe.parentElement.style.overflow = 'visible';
+                }
+                iframe.scrollIntoView({block: 'center'});
+            """, target_frame)
             sb.sleep(2)
             
-            # 🔪 像素级清障：确保上面没盖玻璃
+            # 🔪 像素级清障
             sb.execute_script("""
                 var iframe = arguments[0];
                 var rect = iframe.getBoundingClientRect();
@@ -177,7 +182,6 @@ def execute_renewal(sb, email):
             from selenium.webdriver.common.action_chains import ActionChains
             actions = ActionChains(sb.driver)
             
-            # 以实际抓取到的宽度为基准计算偏移，如果尺寸畸变，强制按 300 计算
             w = target_frame.size.get('width', 300)
             if w > 500: w = 300 
             
