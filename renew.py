@@ -65,12 +65,12 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """终极实战版本：按体型过滤广告，保护 CF 验证框，原生与物理双重打击"""
+    """终极实战版本：提前装填弹药 + 抹除广告外层白框躯壳"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
 
-    # 🚀 智能防空火炮 JS：按尺寸精准区分“友军(验证码)”与“敌军(广告)”
+    # 🚀 智能防空火炮 JS：增加对“底部固定容器(躯壳)”的连根拔起逻辑
     nuke_ads_js = """
         // 1. 常规清理：点击所有明确的 Close 按钮
         document.querySelectorAll('a, button, span, div').forEach(el => {
@@ -78,32 +78,28 @@ def execute_renewal(sb, email):
             if (txt === 'CLOSE' || txt === 'X') { try { el.click(); } catch(e){} }
         });
         
-        // 2. 文本清理：清理原生的广告文字节点
-        document.querySelectorAll('div, a').forEach(el => {
-            let txt = (el.innerText || '').toUpperCase();
-            if (txt.includes('DOWNLOAD EXTENSION') || txt.includes('TRUSTED SPOT') || txt.includes('2 EASY STEPS')) {
-                try { el.remove(); } catch(e){}
-            }
-        });
-        
-        // 3. 核心：按【尺寸】识别 iframe
+        // 2. 核心：按尺寸识别 iframe (保护小尺寸 CF，杀大尺寸广告)
         document.querySelectorAll('iframe').forEach(f => {
-            // CF 验证码通常是 ~300x65，宽容一点设为 400x120
-            // 如果它很小巧，说明它是验证码，绝对不杀！
             if (f.offsetWidth > 0 && f.offsetWidth <= 400 && f.offsetHeight > 0 && f.offsetHeight <= 120) {
                 return; 
             }
-            // 如果它尺寸巨大，或者是隐藏状态，且名字不叫 cloudflare，拔除！
             let src = (f.src || '').toLowerCase();
             if (!src.includes('cloudflare') && !src.includes('turnstile')) {
                 try { f.remove(); } catch(e){}
             }
         });
         
-        // 4. 强制剥离所有高层级全局透明蒙层
+        // 3. 抹除躯壳：强制剥离高层级蒙层，以及固定在底部的可疑白色容器
         document.querySelectorAll('div').forEach(d => {
-            let z = window.getComputedStyle(d).zIndex;
-            if (z !== 'auto' && parseInt(z) > 1000) {
+            let style = window.getComputedStyle(d);
+            // 如果它固定在底部 (通常是底部横幅广告的容器)
+            if ((style.position === 'fixed' || style.position === 'absolute') && style.bottom === '0px') {
+                if (!d.innerHTML.includes('cloudflare') && !d.innerHTML.includes('turnstile')) {
+                    try { d.remove(); } catch(e){}
+                }
+            }
+            // 如果层级特别高且面积巨大
+            if (style.zIndex !== 'auto' && parseInt(style.zIndex) > 900) {
                 if (d.offsetWidth > window.innerWidth * 0.5 && d.offsetHeight > window.innerHeight * 0.5) {
                     try { d.remove(); } catch(e){}
                 }
@@ -140,15 +136,14 @@ def execute_renewal(sb, email):
         print("⏳ 等待敌方阵列与 CF 验证框展开 (6秒)...")
         sb.sleep(6) 
 
-        # 🛡️ 战中清理：保留小尺寸 CF，杀掉大尺寸广告
+        # 🛡️ 战中清理：保留小尺寸 CF，杀掉大尺寸广告及白框
         print("🧹 战中清理：启动尺寸鉴别级清场，确保视野绝对清晰...")
         sb.execute_script(nuke_ads_js)
         sb.sleep(2)
 
         # ================= 🚨 破解 Cloudflare Turnstile 🚨 =================
-        print("🛡️ 呼叫原生穿甲弹 (uc_gui_click_captcha)...")
+        print("🛡️ 呼叫原生穿甲弹 (由于已在 YAML 预装 pyautogui，此次将瞬间击发)...")
         try:
-            # 不再使用会导致崩溃的 wait_for_element，直接让 uc_gui 去找
             sb.uc_gui_click_captcha()
             print("⏳ 穿甲弹已发射，等待 CF 服务器校验响应 (8秒)...")
             sb.sleep(8)
@@ -156,16 +151,13 @@ def execute_renewal(sb, email):
             print(f"⚠️ 原生穿甲弹遇阻: {e}，启动物理坐标盲射...")
             try:
                 from selenium.webdriver.common.action_chains import ActionChains
-                # 页面上应该只剩下一个小尺寸的验证码 iframe 了
                 iframes = sb.find_elements('iframe')
                 for f in iframes:
                     w = f.size.get('width', 0)
                     h = f.size.get('height', 0)
-                    # 再次确认它是小尺寸验证码
                     if 200 < w < 400 and 40 < h < 120:
                         sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", f)
                         sb.sleep(1)
-                        # 瞄准 iframe 的偏左侧 (checkbox 通常在左边)
                         actions = ActionChains(sb.driver)
                         actions.move_to_element_with_offset(f, -int(w * 0.35), 0).click().perform()
                         print("🎯 物理盲射命中目标！等待 8 秒...")
