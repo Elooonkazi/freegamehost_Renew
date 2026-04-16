@@ -65,32 +65,33 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """终极无敌版：DOM遍历摸骨法寻找CF + 绞杀隐私弹窗 + 像素级开火"""
+    """👑 最终加冕版：“唯一幸存者”法则锁定 CF，无视尺寸变形"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
 
-    # 🚀 智能防空火炮 JS：新增对“Do Not Sell”隐私弹窗的绞杀
+    # 🚀 智能防空火炮 JS：清理弹窗、广告、外壳
     nuke_ads_js = """
-        // 1. 常规及敏感词清理：连同右下角的隐私弹窗一起干掉
+        // 1. 斩杀所有包含明显关闭/隐私字眼的弹窗
         document.querySelectorAll('a, button, span, div').forEach(el => {
             let txt = (el.innerText || '').trim().toUpperCase();
-            if (txt === 'CLOSE' || txt === 'X' || txt.includes('DO NOT SELL') || txt.includes('PERSONAL INFORMATION')) { 
-                try { el.click(); } catch(e){} 
+            if (txt === 'CLOSE' || txt === 'X' || txt.includes('DO NOT SELL') || txt.includes('PERSONAL INFORMATION') || txt.includes('2 EASY STEPS')) {
+                try { el.click(); } catch(e){}
                 try { el.remove(); } catch(e){}
             }
         });
         
-        // 2. iframe 保留机制：只要是小巧玲珑的 (CF尺寸)，坚决不删
+        // 2. 清除所有尺寸过大的巨型广告 iframe
         document.querySelectorAll('iframe').forEach(f => {
-            if (f.offsetWidth > 0 && f.offsetWidth <= 400 && f.offsetHeight > 0 && f.offsetHeight <= 120) return; 
-            let src = (f.src || '').toLowerCase();
-            if (!src.includes('cloudflare') && !src.includes('turnstile')) {
-                try { f.remove(); } catch(e){}
+            if (f.offsetWidth > 400 || f.offsetHeight > 200) {
+                let src = (f.src || '').toLowerCase();
+                if (!src.includes('cloudflare') && !src.includes('turnstile')) {
+                    try { f.remove(); } catch(e){}
+                }
             }
         });
         
-        // 3. 扫除底部遗留的巨大躯壳框
+        // 3. 扫除底部遗留的巨大躯壳白框
         document.querySelectorAll('div').forEach(d => {
             let rect = d.getBoundingClientRect();
             if (rect.width > window.innerWidth * 0.7 && rect.height > 50 && rect.top > window.innerHeight * 0.5) {
@@ -133,30 +134,33 @@ def execute_renewal(sb, email):
         sb.execute_script(nuke_ads_js)
         sb.sleep(2)
 
-        # ================= 🚨 破解 Cloudflare Turnstile (体型摸骨法) 🚨 =================
-        print("🛡️ 锁定 CF 验证框！弃用名字查找，启动全 DOM 遍历摸骨法...")
+        # ================= 🚨 破解 Cloudflare Turnstile ("唯一幸存者"打击) 🚨 =================
+        print("🛡️ 锁定 CF 验证框！因为广告全被清理，直接抓取剩下的唯一存活 iframe！")
         try:
-            cf_iframe = None
-            # 拿到网页里所有存活的 iframe
             iframes = sb.driver.find_elements("tag name", "iframe")
+            target_frame = None
             
-            for f in iframes:
+            # 战报输出：看看底层到底返回了什么畸形尺寸
+            for idx, f in enumerate(iframes):
                 w = f.size.get('width', 0)
                 h = f.size.get('height', 0)
-                # CF 的标准体型通常是宽 300，高 65。我们给一个宽容的范围。
-                if 250 <= w <= 350 and 50 <= h <= 120:
-                    cf_iframe = f
-                    print(f"👀 找到目标！确认 CF 验证框尺寸: {w}x{h}")
+                visible = f.is_displayed()
+                print(f"👀 探雷器发现 iframe [{idx}]: 可见状态={visible}, 尺寸={w}x{h}")
+                
+                # 只要它是可见的，且不是一个 0x0 的隐藏像素点，我们就当它是 CF！
+                if visible and w > 10 and h > 10:
+                    target_frame = f
+                    print(f"🎯 锁定目标 iframe [{idx}] 作为打击对象！")
                     break
-            
-            if not cf_iframe:
-                raise Exception("搜遍了全网，没有找到符合 CF 尺寸的 iframe")
+                    
+            if not target_frame:
+                raise Exception("活见鬼，页面上没有抓到任何可见的 iframe。")
 
             # 将目标滚动到屏幕正中央
-            sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", cf_iframe)
+            sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", target_frame)
             sb.sleep(2)
             
-            # 🔪 像素级清障：检测 CF 勾选框正上方是否还有透明蒙层
+            # 🔪 像素级清障：确保上面没盖玻璃
             sb.execute_script("""
                 var iframe = arguments[0];
                 var rect = iframe.getBoundingClientRect();
@@ -166,18 +170,21 @@ def execute_renewal(sb, email):
                 if (overEl && overEl !== iframe && overEl.tagName !== 'BODY' && overEl.tagName !== 'HTML') {
                     overEl.remove();
                 }
-            """, cf_iframe)
+            """, target_frame)
             sb.sleep(1)
 
             # 🎯 发动内部坐标点击
             from selenium.webdriver.common.action_chains import ActionChains
             actions = ActionChains(sb.driver)
-            w = cf_iframe.size.get('width', 300)
+            
+            # 以实际抓取到的宽度为基准计算偏移，如果尺寸畸变，强制按 300 计算
+            w = target_frame.size.get('width', 300)
+            if w > 500: w = 300 
             
             offset_x = -int(w * 0.35)
-            actions.move_to_element(cf_iframe).move_by_offset(offset_x, 0).click().perform()
+            actions.move_to_element(target_frame).move_by_offset(offset_x, 0).click().perform()
             
-            print(f"🎯 内部坐标打击完成 (横向偏移 {offset_x})！等待 8 秒校验...")
+            print(f"🎯 内部坐标穿甲弹发射 (横向偏移 {offset_x})！等待 8 秒校验...")
             sb.sleep(8)
             
         except Exception as e:
