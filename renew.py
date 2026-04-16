@@ -70,14 +70,19 @@ def inject_vip_cookies_via_cdp(sb):
 
 def execute_renewal(sb, email):
     """
-    🎯 交叉验证绝杀版：
-    秒点续期 -> 过滤 0x0 幽灵探针 -> 锁定真实的实体 CF 框 -> 坐标爆破 -> 截图撤退
+    🎯 终极纯 Python 物理探雷版：
+    弃用 JS DOM 传值，纯粹依靠 Python 原生 API 进行体积和坐标的高低位筛选。
     """
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(5)
 
-    # 🚀 进场直接核爆底部的虚假广告框，防止干扰
+    # 🚨 岗哨检查 1
+    if "login" in sb.get_current_url().lower():
+        print("❌ 灾难性拦截：您的身份已失效，被服务器强制踢回了登录页！")
+        return False
+
+    # 🚀 进场第一波清障：用 JS 隐藏掉所有的广告外壳，让它们的尺寸变成 0x0
     sb.execute_script("""
         document.querySelectorAll('div').forEach(el => {
             let txt = (el.innerText || '').toUpperCase();
@@ -111,38 +116,41 @@ def execute_renewal(sb, email):
     if button_clicked:
         print("✅ 续期按钮已点击！等待 CF 验证框展开 (6秒)...")
         sb.sleep(6)
+        
+        # 🚨 岗哨检查 2
+        if "login" in sb.get_current_url().lower():
+            print("❌ 续期请求被拒：被踢回登录页！")
+            return False
 
-        # 🚀 精准制导锁定 CF 验证框
-        print("🛡️ 正在执行：交叉验证血统与体型，抓取真实的 CF 验证框...")
+        # 🚀 纯 Python 物理探雷
+        print("🛡️ 正在执行：全 Python 原生探雷器，按体型和高低位锁定目标...")
         try:
-            # 💡 核心修复：血统与体型同时达标，才是真身！彻底排查 0x0 的幽灵探针。
-            target_frame = sb.execute_script("""
-                let frames = document.querySelectorAll('iframe');
+            iframes = sb.driver.find_elements("tag name", "iframe")
+            target_frame = None
+            min_y = float('inf')
+            target_w = 0
+            target_h = 0
+            
+            for idx, f in enumerate(iframes):
+                # 拿取真实的物理数据
+                w = f.size.get('width', 0)
+                h = f.size.get('height', 0)
+                y = f.location.get('y', 0)
+                print(f"👀 探雷器测算: iframe[{idx}] Y坐标={y}, 尺寸={w}x{h}")
                 
-                for (let f of frames) {
-                    // 1. 铁律：没有肉身（尺寸太小），一律滚蛋！
-                    if (f.offsetWidth < 100 || f.offsetHeight < 30) continue;
-                    
-                    // 2. 检查血统：周围的文字、自身的 title 或 src 链接
-                    let parentText = (f.parentElement ? f.parentElement.innerText : '').toUpperCase();
-                    let title = (f.title || '').toUpperCase();
-                    let src = (f.src || '').toUpperCase();
-                    
-                    if (parentText.includes('SECURITY CHECK') || parentText.includes('VERIFY YOU ARE HUMAN') ||
-                        title.includes('CLOUDFLARE') || title.includes('WIDGET') ||
-                        src.includes('CLOUDFLARE') || src.includes('TURNSTILE')) {
-                        return f; // 找到拥有实体的真神！
-                    }
-                }
-                return null;
-            """)
+                # 铁律 1：拥有实体（剔除 0x0 幽灵探针和被我们隐藏的广告）
+                if w >= 150 and h >= 40:
+                    # 铁律 2：寻找位置最高的那一个（Y坐标最小，彻底避开底部漏网广告）
+                    if y < min_y:
+                        min_y = y
+                        target_frame = f
+                        target_w = w
+                        target_h = h
             
             if target_frame:
-                w = target_frame.size['width']
-                h = target_frame.size['height']
-                print(f"💥 成功锁定拥有实体的正牌 CF 验证框 (尺寸 {w}x{h})")
+                print(f"💥 探雷器成功锁定位置最高的正牌 CF (Y坐标: {min_y}，尺寸 {target_w}x{target_h})")
                 
-                # 强行把真实的验证框滚动到屏幕正中间
+                # 强行把验证框居中
                 sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", target_frame)
                 sb.sleep(1)
                 
@@ -160,13 +168,13 @@ def execute_renewal(sb, email):
                 actions = ActionChains(sb.driver)
                 
                 # 往左偏移宽度的 35%
-                offset_x = -int(w * 0.35)
+                offset_x = -int(target_w * 0.35)
                 actions.move_to_element(target_frame).move_by_offset(offset_x, 0).click().perform()
                 
-                print(f"🎯 鼠标已精准点击复选框 (偏移量 {offset_x})，静候 8 秒等待绿勾...")
+                print(f"🎯 穿甲弹已击发 (偏移量 {offset_x})，静候 8 秒等待绿勾...")
                 sb.sleep(8)
             else:
-                print("❓ 扫描完毕，页面上并未生成拥有实体的 CF 验证框。")
+                print("❓ 探雷器扫遍全网，未发现拥有实体的 CF 验证框。")
                 
         except Exception as e:
             print(f"❌ CF 坐标打击发生异常: {e}")
@@ -180,7 +188,6 @@ def execute_renewal(sb, email):
     send_tg_photo(f"✅ 账号执行完毕，查看最终结果。账号: {email}", final_img)
     
     return True
-
 # ================= 主流程 =================
 def process_account(account):
     email = account.get('email', '')
