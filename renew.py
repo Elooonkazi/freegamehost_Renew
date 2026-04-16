@@ -65,18 +65,23 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """最终稳定版：弃用物理鼠标，采用 ActionChains 元素内坐标打击 + 像素级清障"""
+    """终极无敌版：DOM遍历摸骨法寻找CF + 绞杀隐私弹窗 + 像素级开火"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
 
-    # 🚀 智能防空火炮 JS：加入了扫除底部无用白底横幅的逻辑
+    # 🚀 智能防空火炮 JS：新增对“Do Not Sell”隐私弹窗的绞杀
     nuke_ads_js = """
+        // 1. 常规及敏感词清理：连同右下角的隐私弹窗一起干掉
         document.querySelectorAll('a, button, span, div').forEach(el => {
             let txt = (el.innerText || '').trim().toUpperCase();
-            if (txt === 'CLOSE' || txt === 'X') { try { el.click(); } catch(e){} }
+            if (txt === 'CLOSE' || txt === 'X' || txt.includes('DO NOT SELL') || txt.includes('PERSONAL INFORMATION')) { 
+                try { el.click(); } catch(e){} 
+                try { el.remove(); } catch(e){}
+            }
         });
         
+        // 2. iframe 保留机制：只要是小巧玲珑的 (CF尺寸)，坚决不删
         document.querySelectorAll('iframe').forEach(f => {
             if (f.offsetWidth > 0 && f.offsetWidth <= 400 && f.offsetHeight > 0 && f.offsetHeight <= 120) return; 
             let src = (f.src || '').toLowerCase();
@@ -85,10 +90,9 @@ def execute_renewal(sb, email):
             }
         });
         
-        // 扫除底部遗留的巨大白色躯壳框
+        // 3. 扫除底部遗留的巨大躯壳框
         document.querySelectorAll('div').forEach(d => {
             let rect = d.getBoundingClientRect();
-            // 如果它很宽，且在屏幕中下方
             if (rect.width > window.innerWidth * 0.7 && rect.height > 50 && rect.top > window.innerHeight * 0.5) {
                 if (!d.innerHTML.includes('cloudflare') && !d.innerHTML.includes('turnstile') && !d.innerHTML.includes('RENEW')) {
                     try { d.remove(); } catch(e){}
@@ -125,29 +129,40 @@ def execute_renewal(sb, email):
         print("⏳ 等待敌方阵列与 CF 验证框展开 (6秒)...")
         sb.sleep(6) 
 
-        print("🧹 战中清理：粉碎遗留躯壳，确保屏幕整洁...")
+        print("🧹 战中清理：粉碎遗留躯壳与隐私弹窗，确保屏幕整洁...")
         sb.execute_script(nuke_ads_js)
         sb.sleep(2)
 
-        # ================= 🚨 破解 Cloudflare Turnstile (内部坐标系版本) 🚨 =================
-        print("🛡️ 锁定 CF 验证框！停用不稳定的物理鼠标，启动内部元素坐标精准打击...")
+        # ================= 🚨 破解 Cloudflare Turnstile (体型摸骨法) 🚨 =================
+        print("🛡️ 锁定 CF 验证框！弃用名字查找，启动全 DOM 遍历摸骨法...")
         try:
-            # 找到 CF iframe
-            cf_iframe = sb.driver.find_element("css selector", 'iframe[src*="cloudflare"], iframe[src*="turnstile"], iframe[title*="Cloudflare"]')
+            cf_iframe = None
+            # 拿到网页里所有存活的 iframe
+            iframes = sb.driver.find_elements("tag name", "iframe")
             
+            for f in iframes:
+                w = f.size.get('width', 0)
+                h = f.size.get('height', 0)
+                # CF 的标准体型通常是宽 300，高 65。我们给一个宽容的范围。
+                if 250 <= w <= 350 and 50 <= h <= 120:
+                    cf_iframe = f
+                    print(f"👀 找到目标！确认 CF 验证框尺寸: {w}x{h}")
+                    break
+            
+            if not cf_iframe:
+                raise Exception("搜遍了全网，没有找到符合 CF 尺寸的 iframe")
+
             # 将目标滚动到屏幕正中央
             sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", cf_iframe)
             sb.sleep(2)
             
-            # 🔪 像素级清障：检测 CF 勾选框正上方是否还有透明蒙层，有的话直接删掉
+            # 🔪 像素级清障：检测 CF 勾选框正上方是否还有透明蒙层
             sb.execute_script("""
                 var iframe = arguments[0];
                 var rect = iframe.getBoundingClientRect();
-                // 瞄准 iframe 偏左侧 (checkbox的所在地)
                 var x = rect.left + 30; 
                 var y = rect.top + (rect.height / 2);
                 var overEl = document.elementFromPoint(x, y);
-                // 如果覆盖在这个像素点上的不是 iframe 本身，且不是底层 body，干掉它！
                 if (overEl && overEl !== iframe && overEl.tagName !== 'BODY' && overEl.tagName !== 'HTML') {
                     overEl.remove();
                 }
@@ -159,8 +174,6 @@ def execute_renewal(sb, email):
             actions = ActionChains(sb.driver)
             w = cf_iframe.size.get('width', 300)
             
-            # move_to_element 会把准星移到元素的【正中心】
-            # 然后 move_by_offset 向左偏移 (-宽度的35%)，精准停在方框上，然后扣动扳机
             offset_x = -int(w * 0.35)
             actions.move_to_element(cf_iframe).move_by_offset(offset_x, 0).click().perform()
             
