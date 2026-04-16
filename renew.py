@@ -65,160 +65,106 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """🕊️ 温和清障版：停止乱杀 iframe，让 CF 自然生长后执行三连发"""
+    """
+    逻辑更正版：
+    1. 第一时间清理现场广告。
+    2. 第一时间寻找并点击续期按钮。
+    3. 诱导 CF 弹出并执行精准打击。
+    4. 截图并立即退出。
+    """
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
-    sb.sleep(8) 
+    
+    # 给页面基础加载一点时间
+    sb.sleep(5)
 
-    # 🚀 温和清障术：绝不碰任何 iframe，避免误杀还在发育中的 CF 验证框
-    safe_nuke_js = """
-        // 1. 隐藏多余的文字弹窗
-        document.querySelectorAll('a, button, span, div').forEach(el => {
+    # 🚀 广告“侦测与处决”脚本：点击 Close 并清理蒙层
+    nuke_ads_js = """
+        // 1. 寻找所有的 "Close" 或 "X" 按钮并点击
+        document.querySelectorAll('button, a, span, div[role="button"]').forEach(el => {
             let txt = (el.innerText || '').trim().toUpperCase();
-            if (txt === 'CLOSE' || txt === 'X' || txt.includes('DO NOT SELL') || txt.includes('PERSONAL INFORMATION') || txt.includes('2 EASY STEPS')) {
-                el.style.display = 'none';
+            if (txt === 'CLOSE' || txt === 'X' || txt.includes('DISMISS')) {
+                try { el.click(); console.log('已点击广告关闭按钮'); } catch(e){}
             }
         });
-
-        // 2. 仅隐藏底部巨大且恶心的白色容器
+        // 2. 物理移除大面积的固定蒙层 (防止拦截点击)
         document.querySelectorAll('div').forEach(d => {
-            let style = window.getComputedStyle(d);
-            if ((style.position === 'fixed' || style.position === 'absolute') && style.bottom === '0px') {
-                if (d.offsetWidth > window.innerWidth * 0.5 && (style.backgroundColor.includes('255, 255, 255') || parseInt(style.zIndex) > 10)) {
-                    d.style.display = 'none';
+            let s = window.getComputedStyle(d);
+            if (s.position === 'fixed' && parseInt(s.zIndex) > 100 && d.offsetWidth > window.innerWidth * 0.5) {
+                // 排除 CF 自身的容器
+                if (!d.innerHTML.includes('cloudflare') && !d.innerHTML.includes('turnstile')) {
+                    try { d.remove(); } catch(e){}
                 }
             }
         });
     """
 
-    print("🔄 开始寻找并点击续期按钮...")
-    success = False
+    print("🧹 正在进行进场清障（广告扫描）...")
+    sb.execute_script(nuke_ads_js)
 
-    sb.execute_script(safe_nuke_js)
-    sb.sleep(2)
-
-    # 强行把页面卷到中间偏上，防止点击不到
-    sb.execute_script("window.scrollTo(0, 300);")
-
-    clicked = sb.execute_script("""
+    # 🚀 第一时间点击续期按钮
+    print("🎯 正在执行：第一时间锁定并点击续期按钮...")
+    button_clicked = sb.execute_script("""
         var els = document.querySelectorAll('button, a, div[role="button"]');
         for (var i = 0; i < els.length; i++) {
             var txt = (els[i].innerText || "").toUpperCase().trim();
-            if ((txt.includes('HOURS') || txt.includes('RENEW') || txt.includes('ADD TIME')) 
-                && !txt.includes('UPGRADE') && !txt.includes('DELETE') && txt.length > 0 && txt.length < 30) {
-                var target = els[i];
-                target.scrollIntoView({block: "center", behavior: "instant"});
-                target.click();
+            // 匹配 RENEW 或 HOURS，排除无关按钮
+            if ((txt.includes('HOURS') || txt.includes('RENEW')) && !txt.includes('DELETE') && txt.length < 30) {
+                els[i].scrollIntoView({block: "center"});
+                els[i].click();
                 return true;
             }
         }
         return false;
     """)
 
-    if not clicked:
-        print("✅ 扫描完毕！当前无需续期，或处于 RENEWAL COOLDOWN 冷却中。")
-        success = True
+    if not button_clicked:
+        print("⚠️ 未发现续期按钮，可能已处于冷却中。")
     else:
-        print("🎯 续期按钮已点击！")
-        print("⏳ 停止一切干扰，静静等待 CF 验证框自然生长 (8秒)...")
-        sb.sleep(8) 
+        print("✅ 续期按钮已点击！诱导 CF 验证框弹出...")
+        sb.sleep(6) # 给 CF 加载时间
 
-        print("🧹 战中清理：轻轻扫除弹出的白框...")
-        sb.execute_script(safe_nuke_js)
-        sb.sleep(2)
+    # 🚀 解决 CF 人机验证（最高优先级）
+    print("🛡️ 正在执行：解决 CF 人机验证...")
+    # 再次清理可能在点击后弹出的广告
+    sb.execute_script(nuke_ads_js)
+    sb.sleep(2)
 
-        # ================= 🚨 破解 Cloudflare Turnstile 🚨 =================
-        print("🛡️ 锁定 CF 验证框！执行最稳妥的 ActionChains 内部坐标打击...")
-        try:
-            # 强行校准视角，寻找包含关键文本的区块
-            sb.execute_script("""
-                var divs = document.querySelectorAll('div');
-                for(var i=0; i<divs.length; i++) {
-                    var text = (divs[i].innerText || "").toUpperCase();
-                    if(text.includes('SECURITY CHECK') || text.includes('VERIFY YOU ARE HUMAN') || text.includes('RENEW SERVER')) {
-                        divs[i].scrollIntoView({block: 'center'});
-                        break;
-                    }
-                }
-                window.scrollBy(0, -150); // 稍微往上移一点点，防止被导航栏遮挡
-            """)
+    try:
+        # 寻找符合尺寸的 CF iframe (通常为 300x65 或宽 300 左右)
+        iframes = sb.driver.find_elements("tag name", "iframe")
+        target_frame = None
+        for f in iframes:
+            w = f.size.get('width', 0)
+            h = f.size.get('height', 0)
+            if 280 <= w <= 320 and 60 <= h <= 150:
+                target_frame = f
+                break
+        
+        if target_frame:
+            print(f"💥 发现 CF 验证框 ({target_frame.size['width']}x{target_frame.size['height']})")
+            sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", target_frame)
             sb.sleep(2)
-
-            iframes = sb.driver.find_elements("tag name", "iframe")
-            target_frame = None
             
-            print(f"👀 页面上目前共有 {len(iframes)} 个 iframe，正在筛选...")
-            for idx, f in enumerate(iframes):
-                w = f.size.get('width', 0)
-                h = f.size.get('height', 0)
-                # 宽容的尺寸匹配：既然我们没删其他 iframe，就靠尺寸严选 CF
-                if 200 <= w <= 450 and 40 <= h <= 250:
-                    target_frame = f
-                    print(f"🎯 确认目标 iframe [{idx}] (尺寸 {w}x{h})")
-                    break
-                    
-            if not target_frame:
-                raise Exception("页面上没找到符合尺寸的 iframe。可能是按钮没点成功，或者网络卡顿没加载出来。")
-
-            # 📸 [调试神器] 截取开枪前的纯净视野
-            aim_img = f"{email}_aiming.png"
-            sb.save_screenshot(aim_img)
-            send_tg_photo(f"📸 狙击手已就位，防抖开枪前快照：", aim_img)
-
-            # 🔪 像素级清障（仅移除挡在枪口上的那一层透明薄膜，绝不改动 iframe 自身导致崩溃）
-            sb.execute_script("""
-                var iframe = arguments[0];
-                var rect = iframe.getBoundingClientRect();
-                var x = rect.left + 30; 
-                var y = rect.top + (rect.height / 2);
-                var overEl = document.elementFromPoint(x, y);
-                if (overEl && overEl !== iframe && overEl.tagName !== 'BODY' && overEl.tagName !== 'HTML') {
-                    overEl.style.display = 'none';
-                }
-            """, target_frame)
-            sb.sleep(1)
-
+            # 使用 ActionChains 执行相对坐标点击 (向左偏移以击中复选框)
             from selenium.webdriver.common.action_chains import ActionChains
             actions = ActionChains(sb.driver)
-            
-            w = target_frame.size.get('width', 300)
-            if w > 500: w = 300 
-            
-            offset_1 = -int(w * 0.40)
-            offset_2 = -int(w * 0.35)
-            offset_3 = -int(w * 0.30)
-            
-            print(f"💥 启动三连发霰弹扫射！偏移量: {offset_1}, {offset_2}, {offset_3}")
-            actions.move_to_element(target_frame).move_by_offset(offset_1, 0).click().pause(0.5)\
-                   .move_to_element(target_frame).move_by_offset(offset_2, 0).click().pause(0.5)\
-                   .move_to_element(target_frame).move_by_offset(offset_3, 0).click().perform()
-            
-            print("⏳ 弹夹打空，等待 8 秒校验响应...")
-            sb.sleep(8)
-            
-        except Exception as e:
-            print(f"⚠️ 坐标打击异常: {e}")
+            offset_x = -int(target_frame.size['width'] * 0.35)
+            actions.move_to_element(target_frame).move_by_offset(offset_x, 0).click().perform()
+            print(f"🎯 坐标打击已完成 (偏移量 {offset_x})，等待服务器响应...")
+            sb.sleep(8) # 等待校验通过
+        else:
+            print("❓ 视野内未发现符合尺寸的 CF 验证框，可能已自动通过。")
+    except Exception as e:
+        print(f"❌ CF 处理异常: {e}")
 
-        success = True 
-
-    print("✅ 尝试点击可能存在的最终确认(Confirm)按钮...")
-    sb.execute_script("""
-        var btns = document.querySelectorAll('button');
-        for (var i = 0; i < btns.length; i++) {
-            var txt = (btns[i].innerText || "").toUpperCase();
-            if (txt.includes('确认') || txt.includes('CONFIRM') || txt.includes('YES') || txt.includes('RENEW')) {
-                btns[i].click();
-            }
-        }
-    """)
-    sb.sleep(3) 
-
-    print("🎉 任务环节终结，请查收最终状态快照。")
-    final_img = f"{email}_final_result.png"
+    # 🚀 截图撤退
+    print("📸 正在保存执行现场并准备退出...")
+    final_img = f"{email}_process.png"
     sb.save_screenshot(final_img)
-    send_tg_photo(f"📸 账号 {email} 续期执行完毕，最终现场快照。", final_img)
+    send_tg_photo(f"✅ 续期流程已走完。账号: {email}", final_img)
     
-    return success
+    return True
     
 # ================= 主流程 =================
 def process_account(account):
