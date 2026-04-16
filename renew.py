@@ -65,7 +65,7 @@ def inject_vip_cookies_via_cdp(sb):
                 pass
 
 def execute_renewal(sb, email):
-    """👑 最终破幻版：无视系统可见性伪装，强制显影并精准打击"""
+    """👑 视野死锁版：强行锁定中部面板，三连发霰弹扫射"""
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(8) 
@@ -88,15 +88,6 @@ def execute_renewal(sb, email):
                 }
             }
         });
-        
-        document.querySelectorAll('div').forEach(d => {
-            let rect = d.getBoundingClientRect();
-            if (rect.width > window.innerWidth * 0.7 && rect.height > 50 && rect.top > window.innerHeight * 0.5) {
-                if (!d.innerHTML.includes('cloudflare') && !d.innerHTML.includes('turnstile') && !d.innerHTML.includes('RENEW')) {
-                    try { d.remove(); } catch(e){}
-                }
-            }
-        });
     """
 
     print("🔄 开始寻找并点击续期按钮...")
@@ -104,6 +95,10 @@ def execute_renewal(sb, email):
 
     sb.execute_script(nuke_ads_js)
     sb.sleep(2)
+
+    # 🎯 强制锁定中路：确保视野在网页中间
+    sb.execute_script("window.scrollTo(0, 300);")
+    sb.sleep(1)
 
     clicked = sb.execute_script("""
         var els = document.querySelectorAll('button, a, div[role="button"]');
@@ -132,25 +127,43 @@ def execute_renewal(sb, email):
         sb.sleep(2)
 
         # ================= 🚨 破解 Cloudflare Turnstile 🚨 =================
-        print("🛡️ 锁定 CF 验证框！无视 is_displayed 伪装，只认尺寸！")
+        print("🛡️ 锁定 CF 验证框并强行矫正视野！")
         try:
+            # 👁️ 强制视角锁定：死死盯住包含 RENEW SERVER 的面板，防止滑到网页底部
+            sb.execute_script("""
+                var divs = document.querySelectorAll('div');
+                for(var i=0; i<divs.length; i++) {
+                    var text = (divs[i].innerText || "").toUpperCase();
+                    if(text.includes('RENEW SERVER') || text.includes('SECURITY CHECK')) {
+                        divs[i].scrollIntoView({block: 'center'});
+                        break;
+                    }
+                }
+                window.scrollBy(0, -100); // 稍微往上移一点，防止被顶部导航栏遮挡
+            """)
+            sb.sleep(2)
+
             iframes = sb.driver.find_elements("tag name", "iframe")
             target_frame = None
             
             for idx, f in enumerate(iframes):
                 w = f.size.get('width', 0)
                 h = f.size.get('height', 0)
-                # 🔪 致命改动：移除了 visible 检查。只要不是 0x0 的隐藏像素，就是它！
-                if w > 10 and h > 10:
+                # 严谨的体型识别：宽度在 200-400 之间，高度在 50-200 之间，绝对是 CF
+                if 200 <= w <= 400 and 50 <= h <= 200:
                     target_frame = f
-                    print(f"🎯 破除伪装！强行锁定 iframe [{idx}] (尺寸 {w}x{h}) 作为打击对象！")
+                    print(f"🎯 锁定目标 iframe [{idx}] (尺寸 {w}x{h})")
                     break
                     
             if not target_frame:
-                raise Exception("活见鬼，页面上连一个有实体的 iframe 都没有了。")
+                raise Exception("页面上未能找到符合 CF 尺寸的 iframe。")
 
-            # 🔪 强制显影术：如果 Selenium 认为它不可见，ActionChains 可能会拒绝点击。
-            # 我们用 JS 强行把它和它的父节点属性全部改写为绝对可见！
+            # 📸 [调试神器] 在开枪前瞬间截个图，看看它到底瞄准了哪里
+            aim_img = f"{email}_aiming.png"
+            sb.save_screenshot(aim_img)
+            send_tg_photo(f"📸 狙击手已就位，开枪前视野快照：", aim_img)
+
+            # 🔪 强制显影术
             sb.execute_script("""
                 var iframe = arguments[0];
                 iframe.style.display = 'block';
@@ -159,36 +172,28 @@ def execute_renewal(sb, email):
                 if(iframe.parentElement) {
                     iframe.parentElement.style.display = 'block';
                     iframe.parentElement.style.visibility = 'visible';
-                    iframe.parentElement.style.overflow = 'visible';
-                }
-                iframe.scrollIntoView({block: 'center'});
-            """, target_frame)
-            sb.sleep(2)
-            
-            # 🔪 像素级清障
-            sb.execute_script("""
-                var iframe = arguments[0];
-                var rect = iframe.getBoundingClientRect();
-                var x = rect.left + 30; 
-                var y = rect.top + (rect.height / 2);
-                var overEl = document.elementFromPoint(x, y);
-                if (overEl && overEl !== iframe && overEl.tagName !== 'BODY' && overEl.tagName !== 'HTML') {
-                    overEl.remove();
                 }
             """, target_frame)
             sb.sleep(1)
 
-            # 🎯 发动内部坐标点击
+            # 🎯 发动内部坐标三连击 (横向扫射，总有一发命中 checkbox)
             from selenium.webdriver.common.action_chains import ActionChains
             actions = ActionChains(sb.driver)
             
             w = target_frame.size.get('width', 300)
             if w > 500: w = 300 
             
-            offset_x = -int(w * 0.35)
-            actions.move_to_element(target_frame).move_by_offset(offset_x, 0).click().perform()
+            # 计算 checkbox 可能存在的三个横向位置点
+            offset_1 = -int(w * 0.40) # 最左侧
+            offset_2 = -int(w * 0.35) # 稍微靠右
+            offset_3 = -int(w * 0.30) # 再靠右
             
-            print(f"🎯 内部坐标穿甲弹发射 (横向偏移 {offset_x})！等待 8 秒校验...")
+            print(f"💥 启动三连发霰弹扫射！偏移量: {offset_1}, {offset_2}, {offset_3}")
+            actions.move_to_element(target_frame).move_by_offset(offset_1, 0).click().pause(0.5)\
+                   .move_to_element(target_frame).move_by_offset(offset_2, 0).click().pause(0.5)\
+                   .move_to_element(target_frame).move_by_offset(offset_3, 0).click().perform()
+            
+            print("⏳ 弹夹打空，等待 8 秒校验响应...")
             sb.sleep(8)
             
         except Exception as e:
@@ -201,7 +206,7 @@ def execute_renewal(sb, email):
         var btns = document.querySelectorAll('button');
         for (var i = 0; i < btns.length; i++) {
             var txt = (btns[i].innerText || "").toUpperCase();
-            if (txt.includes('确认') || txt.includes('CONFIRM') || txt.includes('YES')) {
+            if (txt.includes('确认') || txt.includes('CONFIRM') || txt.includes('YES') || txt.includes('RENEW')) {
                 btns[i].click();
             }
         }
