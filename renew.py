@@ -70,8 +70,8 @@ def inject_vip_cookies_via_cdp(sb):
 
 def execute_renewal(sb, email):
     """
-    🎯 北斗制导版：
-    秒点续期 -> 锁定周围带有"Security Check"字眼的真实 CF 框 -> 坐标爆破 -> 截图撤退
+    🎯 交叉验证绝杀版：
+    秒点续期 -> 过滤 0x0 幽灵探针 -> 锁定真实的实体 CF 框 -> 坐标爆破 -> 截图撤退
     """
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
@@ -113,37 +113,36 @@ def execute_renewal(sb, email):
         sb.sleep(6)
 
         # 🚀 精准制导锁定 CF 验证框
-        print("🛡️ 正在执行：通过周围环境文本，顺藤摸瓜寻找真实 CF 验证框...")
+        print("🛡️ 正在执行：交叉验证血统与体型，抓取真实的 CF 验证框...")
         try:
-            # 💡 核心修复：通过查找 "SECURITY CHECK" 等文字，精准提取它身边的 iframe！
+            # 💡 核心修复：血统与体型同时达标，才是真身！彻底排查 0x0 的幽灵探针。
             target_frame = sb.execute_script("""
                 let frames = document.querySelectorAll('iframe');
                 
-                // 战术 1：顺藤摸瓜 (看它爸爸的文字里有没有验证提示)
                 for (let f of frames) {
+                    // 1. 铁律：没有肉身（尺寸太小），一律滚蛋！
+                    if (f.offsetWidth < 100 || f.offsetHeight < 30) continue;
+                    
+                    // 2. 检查血统：周围的文字、自身的 title 或 src 链接
                     let parentText = (f.parentElement ? f.parentElement.innerText : '').toUpperCase();
-                    if (parentText.includes('SECURITY CHECK') || parentText.includes('VERIFY YOU ARE HUMAN')) {
-                        return f;
-                    }
-                }
-                
-                // 战术 2：看它自身的 title 属性
-                for (let f of frames) {
                     let title = (f.title || '').toUpperCase();
-                    if (title.includes('CLOUDFLARE') || title.includes('WIDGET CONTAINING')) {
-                        return f;
+                    let src = (f.src || '').toUpperCase();
+                    
+                    if (parentText.includes('SECURITY CHECK') || parentText.includes('VERIFY YOU ARE HUMAN') ||
+                        title.includes('CLOUDFLARE') || title.includes('WIDGET') ||
+                        src.includes('CLOUDFLARE') || src.includes('TURNSTILE')) {
+                        return f; // 找到拥有实体的真神！
                     }
                 }
-                
                 return null;
             """)
             
             if target_frame:
                 w = target_frame.size['width']
                 h = target_frame.size['height']
-                print(f"💥 成功锁定正牌 CF 验证框 (尺寸 {w}x{h})")
+                print(f"💥 成功锁定拥有实体的正牌 CF 验证框 (尺寸 {w}x{h})")
                 
-                # 强行把真实的验证框滚动到屏幕正中间！
+                # 强行把真实的验证框滚动到屏幕正中间
                 sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", target_frame)
                 sb.sleep(1)
                 
@@ -167,7 +166,7 @@ def execute_renewal(sb, email):
                 print(f"🎯 鼠标已精准点击复选框 (偏移量 {offset_x})，静候 8 秒等待绿勾...")
                 sb.sleep(8)
             else:
-                print("❓ 扫描完毕，页面中部并未生成 CF 验证框。")
+                print("❓ 扫描完毕，页面上并未生成拥有实体的 CF 验证框。")
                 
         except Exception as e:
             print(f"❌ CF 坐标打击发生异常: {e}")
