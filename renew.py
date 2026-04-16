@@ -6,22 +6,26 @@ from seleniumbase import SB
 
 # ================= 🚨 本地克隆配置区 🚨 =================
 
-# 1. 你本地的真实浏览器指纹
-MY_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
+# 1. 必须填入你提取 Cookie 时的真实浏览器指纹！(千万别用假版本号)
+MY_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36" # 请替换为你的真实 UA
 
-# 2. 你本地的真实 Cookie 组合
+# 2. 你本地的真实 Cookie 组合 (新增了必不可少的 XSRF-TOKEN)
 MY_COOKIES = [
     {
         "name": "cf_clearance", 
-        "value": "CnlHqFiqP3e1HFJ8xvuxaowIxZHOK_ubmdSi.9MUJPE-1776326730-1.2.1.1-UsMtnC.oO4IZZuTJ7sFqOrekwMeSYlPte2s4SSCZiwwPOWVmyRsufSX.yQIWj3W.a2QqDsd2fMzFgtBs05DrwRVsEusfNfRUwV2gTDX_qEUc9NNaphCJME99otOCj3XS23epAm1oZRU4FLMZHEHqsO3vwBCqbgbjhALNAzwS_qqgCt6.uq8VJNRN5FuBNk7BeCW3ei80CutoOtItGU8CSMjKuVyprIVenrlAsaou.qnR668s4aqm.LPCqIUTzI0ZISXJDfMWPSa5HUmO0nVb1l1DosljIgz7NCpj8jZsfhKYGMEP2ZWvpW3E24Pe6e1rBIEoxbgOh2MsR9pzNe_kDA"
+        "value": "BCLS1VRs2XdNcW121YxY5k6rjmskDZXawJDTsdF8k5c-1776328981-1.2.1.1-riFPNqFniObElrMpsivZquGGZDH0fDefCm._dCWBLJ63RYDn7rUhJVowj25pMn0iW_3bLeZHL1msJghRWlArpL11ELdhn_6E1epeia9V.ohjUSmSODMUrn2F5C6aiuwsBJTkrhOFKgQ3zporxVPC4Z5_orcQHYdOHe6w5u1EZj7Un8F1XmLKHVA68L7sQgbr0HrcRTzXHwO.WYJgy1M5hr_fQEiDMSByjvPZZINcipq6tMxN3KDkGUsgr9nUKnO8AooofvyZJfP8hBo5bQHze.Zl9hmNJxHFBG3OnV_K7UimdVR93_nYx71n.OsMPXyeqETBzhq4g.of1Uh9XiI2bA"
     },
     {
         "name": "pterodactyl_session", 
-        "value": "eyJpdiI6IlFWcWRrQWFOd0l6TEQyUFpCTHRsUlE9PSIsInZhbHVlIjoiVlg5TmVET1FxdnVJQ1BPeGFyWDZyRnpzV1FTV0JmYnpVNklodTRKbnM4TVA0czE2ZFlVajhGSGoxTFIxNTl3a2wyTmtadkllZi9BN0dRamk2MFdMV3dETlBPck1UV3hIUUdxei9YZ3ZGYzYydm16ZDZjck56eXo5Sk5oMk5FL1UiLCJtYWMiOiJkMzA4Nzg4MWE5YmQ3MTdjNWI5MzE0NWMyMDI3Yzg2MjE2YzgwZWUyMzEyZDA1NDBmYWU4M2JjY2FlMmI4MmU1IiwidGFnIjoiIn0%3D"
+        "value": "eyJpdiI6ImJnZHZpaGxKU1VLRWczbXJReUZWM3c9PSIsInZhbHVlIjoidVA5c29vaVkxN0Z6VmlZK2JOa2U0eE9sR01OczJVSlAwM3BZZTVKUjNIVnZJYmFxVXVudFdpL01xaDRPVnBObC82dkNuZlNMcXNCTGVJbFRHb1BtQSthTWpqeWtjcm5adDF3MDRqRmdhaWlhaHBLU3EzdGVSeGpYS3RwZVVtQkkiLCJtYWMiOiJkNDU4Zjc4YmFkYWQ5OGRlM2EyNjNjMWUxY2I3NDRiYTNjYTBkYzZlYjdhZjZhYWJmNDI4MjE3MjBkOWFkMjY1IiwidGFnIjoiIn0%3D"
+    },
+    {
+        "name": "XSRF-TOKEN", 
+        "value": "eyJpdiI6InVJMVYrdkxWK2xkWlNreDJSVUJnREE9PSIsInZhbHVlIjoiaStRKzljRG1yLytxUXNEWjNUVnJVT00xYU1uTkxoazdUTjBjdDk5NDMzQzZZOWthdVFoZTByYnUzOEZMZmRhZ3BlY0dRQ0ZEalN5di9tSHE2UHk3Z1JMN0RabjhtSUZoSy9kY2dSNFRlU2JmSU56bU9CUno2VnN6TFY1d21nL2ciLCJtYWMiOiJjYTkxMWFlMTAzNzIzNzY0MjNhYjY4NzA5YjZjMGNiYmY0MDc4MDQ4NzA5NDA5NDg1NjQ0YmE5ZTljN2M3YzgyIiwidGFnIjoiIn0%3D" # 🚨 必须新增这个！
     },
     {
         "name": "remember_web_59ba36addc2b2f9401580f014c7f58ea4e30989d", 
-        "value": "eyJpdiI6InFIUjJaTzM4N3hpQkRnaVlBQWhkUFE9PSIsInZhbHVlIjoiZllJVXdld1V1TXFyOTE1SjRDTExXNzgySFpnaG1vVHBlZzhTUzV6RVZpdkZxeDVrdzBlSTJPOWUvWVh6SnF5Ti9KMWI1WEJ0S29vQW14NmRsSWVKRVdBVnVRc0o3QVloMUx2L3B5RDRKU2lGRlZUcU12OHhuZTRlOEhpeWFCM0VwSWxYTUh5aXgvaWZnZkZ1MG9SVlVCZ1RvcGcwUzJzdElZNnRUR2Jhb1lueDg0SVBJWGMrYWdxRnltZFI0WE1mUzgrRkEzYllRd1ZPYldxc3RZQi9yOXVxdThEUGVDcktFWkF6cUQ3WlBuST0iLCJtYWMiOiJlZjZmOGYzNDQyZDhmNmEyOGIyNmQ4M2I1MDNlYTAxYTgwODRlNGU2ZTcwNjAzYWY1MjI5NzJmZTcyNDBlYzY1IiwidGFnIjoiIn0%3D"
+        "value": "eyJpdiI6Imo1OGFBOXRhdGxFOWRLUVFZcldjbUE9PSIsInZhbHVlIjoiVEE3MFY3SUNHT2UvVktaWmkzMDVzampORUhQb3ZubzczU1RBVnpGbGlxSUZJSFVqZHRzRkZrdnlVdTlDL2pMRU9objJKTXppL0RLYVlSbkpSeE9NVUN0LzU2dWVYZTlkNnZPUldqKzVUN2VpQ1NVbzdwcXdXTzhoOTBZbk1GRUcwRkUveHowUzNWMWVSQzd4T1d2R0dGRFFZTmdVWTI4WWRETTF6K3AxT2REclErYlN1QllRSVZSOE1JOWo2alFzOWM4K0RrR1lKT1ZnQmFFQU1jcGJ2c1oxVWNmYTdiR2g0SjJTQy9VMC8rMD0iLCJtYWMiOiI5NmYwZTY3NzQxNGY0ZGZlOGJlMGFlNzcyNTU3MjNmNjQwZDc0MjM5MmJkY2RjNjA0OTNiNWQwZWViZWQ0M2U3IiwidGFnIjoiIn0%3D"
     }
 ]
 
@@ -34,7 +38,7 @@ TARGET_SERVER_URL = "https://panel.freegamehost.xyz/server/41ed8b6e"
 try:
     ACCOUNTS = json.loads(FGH_ACCOUNT_ENV)
 except Exception as e:
-    print(f"❌ 环境变量解析失败，请检查 JSON 格式: {e}")
+    print(f"❌ 环境变量解析失败: {e}")
     exit(1)
 
 def send_tg_photo(msg, photo_path=None):
@@ -49,29 +53,32 @@ def send_tg_photo(msg, photo_path=None):
         else:
             url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
             requests.post(url, json={"chat_id": chat_id, "text": msg})
-    except Exception:
+    except:
         pass
 
 def inject_vip_cookies_via_cdp(sb):
     print("正在通过 CDP 强注克隆 Cookie...")
     for c in MY_COOKIES:
-        if c["value"] and "在此填入" not in c["value"]:
+        if c.get("value") and "这里填" not in c.get("value"):
             try:
                 sb.driver.execute_cdp_cmd('Network.setCookie', {
                     'name': c['name'], 'value': c['value'],
                     'domain': 'panel.freegamehost.xyz', 'path': '/', 'secure': True
                 })
-            except Exception:
+            except:
                 pass
 
 def execute_renewal(sb, email):
-    """
-    极简主线版 (终极修正)：
-    秒点续期 -> 废弃名字查找，纯靠体型抓出 CF -> 强制交互爆破 -> 截图退出
-    """
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
     sb.sleep(5)
+
+    # 🚨 岗哨检查 1：进场是否直接被踢回了登录页？
+    if "login" in sb.get_current_url().lower():
+        print("❌ 灾难性拦截：您的身份已失效，被服务器强制踢回了登录页！")
+        print("💡 原因：User-Agent 暴露、IP 变动、或者缺少 XSRF-TOKEN。")
+        sb.save_screenshot(f"{email}_kicked.png")
+        return False
 
     # 🚀 附带广告扫描：顺手点掉明确挡路的 Close 按钮
     sb.execute_script("""
@@ -83,8 +90,8 @@ def execute_renewal(sb, email):
         });
     """)
 
-    # 🚀 步骤一：第一时间寻找并点击续期按钮
-    print("🎯 第一时间锁定并点击续期按钮...")
+    # 🚀 第一时间寻找并点击续期按钮
+    print("🎯 正在执行：第一时间锁定并点击续期按钮...")
     button_clicked = sb.execute_script("""
         var els = document.querySelectorAll('button, a, div[role="button"]');
         for (var i = 0; i < els.length; i++) {
@@ -101,18 +108,22 @@ def execute_renewal(sb, email):
     if button_clicked:
         print("✅ 续期按钮已点击！等待 CF 验证框展开 (6秒)...")
         sb.sleep(6)
+        
+        # 🚨 岗哨检查 2：点击续期发送 POST 请求后，是否被后端踢出？
+        if "login" in sb.get_current_url().lower():
+            print("❌ 续期请求被拒：缺少 XSRF-TOKEN 或 Session 异常，被踢回登录页！")
+            sb.save_screenshot(f"{email}_kicked_after_click.png")
+            return False
 
-        # 🚀 步骤二：优先解决 CF 人机验证
-        print("🛡️ 正在执行：精准寻找并破解 CF 验证框...")
+        # 🚀 解决 CF 人机验证
+        print("🛡️ 正在执行：寻找并点击 CF 白框...")
         try:
-            # 【核心修正】：废弃按名字查找！直接抓取页面所有 iframe，按尺寸抓人！
             iframes = sb.driver.find_elements("tag name", "iframe")
             target_frame = None
             
             for f in iframes:
                 w = f.size.get('width', 0)
                 h = f.size.get('height', 0)
-                # CF 框的真实尺寸通常在这个范围 (宽度 250~380，高度 50~150)
                 if 250 <= w <= 380 and 50 <= h <= 150:
                     target_frame = f
                     break
@@ -125,7 +136,7 @@ def execute_renewal(sb, email):
                 sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", target_frame)
                 sb.sleep(1)
                 
-                # 🔪 强制交互术：强行解除底层限制，让隐形的替身也得显形接子弹
+                # 强制显影术
                 sb.execute_script("""
                     arguments[0].style.display = 'block';
                     arguments[0].style.visibility = 'visible';
@@ -134,7 +145,6 @@ def execute_renewal(sb, email):
                 """, target_frame)
                 sb.sleep(1)
                 
-                # 启动内部坐标系精确点击
                 from selenium.webdriver.common.action_chains import ActionChains
                 actions = ActionChains(sb.driver)
                 
@@ -144,88 +154,39 @@ def execute_renewal(sb, email):
                 print(f"🎯 鼠标已精准点击复选框 (偏移量 {offset_x})，静候 8 秒等待绿勾...")
                 sb.sleep(8)
             else:
-                print("❓ 扫描完毕，页面上并未生成符合 CF 尺寸的 iframe。")
+                print("❓ 扫描完毕，页面上并未生成 CF 验证框 (可能已免验证)。")
                 
         except Exception as e:
             print(f"❌ CF 坐标打击发生异常: {e}")
     else:
         print("⚠️ 未发现续期按钮，可能已处于冷却中。")
 
-    # 🚀 步骤三：截图撤退
     print("📸 任务流程结束，正在截图并退出...")
     final_img = f"{email}_process.png"
     sb.save_screenshot(final_img)
     send_tg_photo(f"✅ 账号执行完毕，查看最终结果。账号: {email}", final_img)
-    
     return True
-    
+
 # ================= 主流程 =================
 def process_account(account):
     email = account.get('email', '')
-    password = account.get('password', '')
-    
     print(f"==========================================")
     print(f"👤 开始处理账号: {email}")
     print("==========================================")
 
-    # ---------------- 隔离区 A：尝试克隆 Cookie 秒进 ----------------
     print("▶️ 策略 A: 尝试 CDP 注入 Cookie 免密登录...")
     with SB(uc=True, headless=False, agent=MY_USER_AGENT) as sb:
         sb.driver.set_window_size(1920, 1080)
-        
         sb.uc_open_with_tab("about:blank") 
         inject_vip_cookies_via_cdp(sb)
-        
         sb.uc_open_with_reconnect("https://panel.freegamehost.xyz/", 10)
         sb.sleep(6)
 
         if sb.is_element_visible('a[href="/account"]') or sb.is_element_visible('.fa-sign-out-alt'):
-            print("✅ 策略 A 成功！克隆身份完美通过验证！")
+            print("✅ 策略 A 成功！克隆身份初步通过验证！")
             return execute_renewal(sb, email)
         else:
-            print("⚠️ 策略 A (Cookie) 失效！销毁当前污染的浏览器进程...")
-    
-    # ---------------- 隔离区 B：开启全新纯净浏览器，硬刚账号密码 ----------------
-    print("🔄 启动策略 B: 开启全新纯净浏览器，执行物理登录...")
-    with SB(uc=True, headless=False, agent=MY_USER_AGENT) as sb:
-        try:
-            sb.driver.set_window_size(1920, 1080)
-            sb.uc_open_with_reconnect("https://panel.freegamehost.xyz/auth/login", 10)
-            sb.sleep(6)
-            
-            if sb.is_element_present('iframe[src*="cloudflare"]'):
-                print("🛡️ 检测到 Cloudflare 盾，执行纯净破解...")
-                sb.uc_gui_click_captcha()
-                sb.sleep(6) 
-            
-            USERNAME_SELECTOR = 'input[name="user"], input[name="username"], input[type="email"], input[type="text"]'
-            PASSWORD_SELECTOR = 'input[name="password"], input[type="password"]'
-
-            print("等待登录表单渲染...")
-            sb.wait_for_element(USERNAME_SELECTOR, timeout=15)
-            
-            print("填写账号密码...")
-            sb.type(USERNAME_SELECTOR, email)
-            sb.type(PASSWORD_SELECTOR, password)
-            sb.sleep(1)
-            sb.click('button[type="submit"], button:contains("Login"), button:contains("LOGIN")')
-            print("提交成功，等待后台加载...")
-            sb.sleep(8) 
-            
-            if sb.is_element_visible('a[href="/account"]') or sb.is_element_visible('.fa-sign-out-alt'):
-                print("✅ 策略 B 物理登录成功！")
-                return execute_renewal(sb, email)
-            else:
-                fatal_img = f"{email}_login_fatal.png"
-                sb.save_screenshot(fatal_img)
-                send_tg_photo(f"❌ 账号 {email} 所有登录策略均失败，请看截图。", fatal_img)
-                return False
-                
-        except Exception as e:
-            print(f"❌ 物理登录异常: {e}")
-            error_img = f"{email}_error.png"
-            sb.save_screenshot(error_img)
-            send_tg_photo(f"❌ 脚本异常终止，截图已保存。", error_img)
+            print("❌ 策略 A 失败，面板未能识别您的 Cookie。")
             return False
 
 def main():
