@@ -66,49 +66,32 @@ def inject_vip_cookies_via_cdp(sb):
 
 def execute_renewal(sb, email):
     """
-    逻辑更正版：
-    1. 第一时间清理现场广告。
-    2. 第一时间寻找并点击续期按钮。
-    3. 诱导 CF 弹出并执行精准打击。
-    4. 截图并立即退出。
+    极速爆破版：
+    1. 秒点续期按钮。
+    2. 活体检测 CF 真身，无视隐形替身。
+    3. 坐标偏左爆破，截图撤退。
     """
     print(f"✈️ 正在空降目标服务器: {TARGET_SERVER_URL}")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 10)
-    
-    # 给页面基础加载一点时间
     sb.sleep(5)
 
-    # 🚀 广告“侦测与处决”脚本：点击 Close 并清理蒙层
+    # 🚀 进场第一秒：只点掉明确阻挡点击的 Close 按钮
     nuke_ads_js = """
-        // 1. 寻找所有的 "Close" 或 "X" 按钮并点击
         document.querySelectorAll('button, a, span, div[role="button"]').forEach(el => {
             let txt = (el.innerText || '').trim().toUpperCase();
             if (txt === 'CLOSE' || txt === 'X' || txt.includes('DISMISS')) {
-                try { el.click(); console.log('已点击广告关闭按钮'); } catch(e){}
-            }
-        });
-        // 2. 物理移除大面积的固定蒙层 (防止拦截点击)
-        document.querySelectorAll('div').forEach(d => {
-            let s = window.getComputedStyle(d);
-            if (s.position === 'fixed' && parseInt(s.zIndex) > 100 && d.offsetWidth > window.innerWidth * 0.5) {
-                // 排除 CF 自身的容器
-                if (!d.innerHTML.includes('cloudflare') && !d.innerHTML.includes('turnstile')) {
-                    try { d.remove(); } catch(e){}
-                }
+                try { el.click(); } catch(e){}
             }
         });
     """
-
-    print("🧹 正在进行进场清障（广告扫描）...")
     sb.execute_script(nuke_ads_js)
 
-    # 🚀 第一时间点击续期按钮
+    # 🚀 第一时间寻找并点击续期按钮
     print("🎯 正在执行：第一时间锁定并点击续期按钮...")
     button_clicked = sb.execute_script("""
         var els = document.querySelectorAll('button, a, div[role="button"]');
         for (var i = 0; i < els.length; i++) {
             var txt = (els[i].innerText || "").toUpperCase().trim();
-            // 匹配 RENEW 或 HOURS，排除无关按钮
             if ((txt.includes('HOURS') || txt.includes('RENEW')) && !txt.includes('DELETE') && txt.length < 30) {
                 els[i].scrollIntoView({block: "center"});
                 els[i].click();
@@ -118,51 +101,66 @@ def execute_renewal(sb, email):
         return false;
     """)
 
-    if not button_clicked:
-        print("⚠️ 未发现续期按钮，可能已处于冷却中。")
-    else:
-        print("✅ 续期按钮已点击！诱导 CF 验证框弹出...")
-        sb.sleep(6) # 给 CF 加载时间
+    if button_clicked:
+        print("✅ 续期按钮已点击！等待 CF 验证框展开 (6秒)...")
+        sb.sleep(6)
+        # 弹窗可能会在点击后出现，再点一次 Close
+        sb.execute_script(nuke_ads_js)
+        sb.sleep(1)
 
-    # 🚀 解决 CF 人机验证（最高优先级）
-    print("🛡️ 正在执行：解决 CF 人机验证...")
-    # 再次清理可能在点击后弹出的广告
-    sb.execute_script(nuke_ads_js)
-    sb.sleep(2)
-
-    try:
-        # 寻找符合尺寸的 CF iframe (通常为 300x65 或宽 300 左右)
-        iframes = sb.driver.find_elements("tag name", "iframe")
-        target_frame = None
-        for f in iframes:
-            w = f.size.get('width', 0)
-            h = f.size.get('height', 0)
-            if 280 <= w <= 320 and 60 <= h <= 150:
-                target_frame = f
-                break
-        
-        if target_frame:
-            print(f"💥 发现 CF 验证框 ({target_frame.size['width']}x{target_frame.size['height']})")
-            sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", target_frame)
-            sb.sleep(2)
+        # 🚀 解决 CF 人机验证（核心目标）
+        print("🛡️ 正在执行：寻找并点击 CF 白框...")
+        try:
+            iframes = sb.driver.find_elements("tag name", "iframe")
+            target_frame = None
             
-            # 使用 ActionChains 执行相对坐标点击 (向左偏移以击中复选框)
-            from selenium.webdriver.common.action_chains import ActionChains
-            actions = ActionChains(sb.driver)
-            offset_x = -int(target_frame.size['width'] * 0.35)
-            actions.move_to_element(target_frame).move_by_offset(offset_x, 0).click().perform()
-            print(f"🎯 坐标打击已完成 (偏移量 {offset_x})，等待服务器响应...")
-            sb.sleep(8) # 等待校验通过
-        else:
-            print("❓ 视野内未发现符合尺寸的 CF 验证框，可能已自动通过。")
-    except Exception as e:
-        print(f"❌ CF 处理异常: {e}")
+            for f in iframes:
+                try:
+                    # 【核心修复】：活体检测！只要是隐藏的，直接跳过！
+                    if not f.is_displayed():
+                        continue
+                        
+                    w = f.size.get('width', 0)
+                    h = f.size.get('height', 0)
+                    # CF 框的真实尺寸通常在这个范围
+                    if 250 <= w <= 350 and 50 <= h <= 150:
+                        target_frame = f
+                        break
+                except:
+                    pass
+            
+            if target_frame:
+                w = target_frame.size['width']
+                h = target_frame.size['height']
+                print(f"💥 成功锁定【可见的】CF 真身 ({w}x{h})")
+                
+                # 把白框居中，防止在屏幕边缘点不到
+                sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", target_frame)
+                sb.sleep(2)
+                
+                # 使用 ActionChains 执行相对坐标点击
+                from selenium.webdriver.common.action_chains import ActionChains
+                actions = ActionChains(sb.driver)
+                
+                # 往左侧偏移宽度的 35%，正好是那个复选框的位置
+                offset_x = -int(w * 0.35)
+                actions.move_to_element(target_frame).move_by_offset(offset_x, 0).click().perform()
+                
+                print(f"🎯 鼠标已点击复选框 (偏移量 {offset_x})，静候 8 秒等待绿勾...")
+                sb.sleep(8)
+            else:
+                print("❓ 扫遍全屏，没有发现处于可见状态的 CF 验证框。")
+                
+        except Exception as e:
+            print(f"❌ CF 坐标打击发生异常: {e}")
+    else:
+        print("⚠️ 未发现续期按钮，可能已处于冷却中。")
 
-    # 🚀 截图撤退
-    print("📸 正在保存执行现场并准备退出...")
+    # 🚀 任务结束，截图撤退
+    print("📸 任务流程结束，正在截图并退出...")
     final_img = f"{email}_process.png"
     sb.save_screenshot(final_img)
-    send_tg_photo(f"✅ 续期流程已走完。账号: {email}", final_img)
+    send_tg_photo(f"✅ 账号执行完毕，查看最终结果。账号: {email}", final_img)
     
     return True
     
