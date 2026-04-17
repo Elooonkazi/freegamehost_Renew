@@ -55,8 +55,21 @@ def execute_renewal(sb, email):
         print("❌ 身份失效，未能进入管理面板")
         return False
 
-    # 清除阻碍元素
-    sb.execute_script("document.querySelectorAll('div').forEach(el => { if(el.innerText.includes('STEP')) el.style.display='none'; });")
+    # 【核心修复 1】核弹级清理：直接将 DOM 树里的广告节点连根拔起
+    print("🧹 正在清理页面广告与遮挡物...")
+    sb.execute_script("""
+        // 删掉所有非 Cloudflare 的 iframe (通常是第三方广告)
+        document.querySelectorAll('iframe').forEach(f => {
+            if(f.src && !f.src.includes('cloudflare')) f.remove(); 
+        });
+        // 删掉所有带有特定广告文本的区块
+        document.querySelectorAll('div, a, span').forEach(el => { 
+            let txt = (el.innerText || '').toUpperCase();
+            if(txt.includes('DOWNLOAD EXTENSION') || txt.includes('2 EASY STEPS') || txt.includes('ADVERTISEMENT')) {
+                el.remove(); 
+            }
+        });
+    """)
 
     print("🎯 锁定续期按钮...")
     button_clicked = sb.execute_script("""
@@ -73,43 +86,28 @@ def execute_renewal(sb, email):
     """)
 
     if button_clicked:
-        print("✅ 按钮已点击，等待验证框加载...")
-        sb.sleep(8)
+        print("✅ 按钮已点击，等待 CF 验证框展开...")
+        sb.sleep(6)
         
-        # 物理探雷逻辑
+        # 【核心修复 2】放弃手动算坐标，使用 SeleniumBase 专用的 Turnstile 击杀方法
+        print("🛡️ 呼叫 SeleniumBase 内置反人机装甲 (uc_gui_click_captcha)...")
         try:
-            iframes = sb.driver.find_elements("tag name", "iframe")
-            target_frame = None
-            min_y = float('inf')
-            
-            for f in iframes:
-                w, h = f.size.get('width', 0), f.size.get('height', 0)
-                y = f.location.get('y', 0)
-                # 寻找位置最高且具备实体的 iframe
-                if w >= 150 and h >= 40 and y < min_y:
-                    min_y = y
-                    target_frame = f
-            
-            if target_frame:
-                print(f"💥 探雷器锁定 CF 验证框 (Y:{min_y})")
-                sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", target_frame)
-                sb.sleep(2)
-                
-                # 坐标偏移点击 (左侧 35% 位置)
-                actions = ActionChains(sb.driver)
-                offset_x = -int(target_frame.size['width'] * 0.35)
-                actions.move_to_element(target_frame).move_by_offset(offset_x, 0).click().perform()
-                
-                print("🎯 穿甲弹已击发，等待系统响应...")
-                sb.sleep(10)
+            # 这个内置方法会自动寻找 CF iframe，自动计算偏移量，并模拟拟人化点击
+            sb.uc_gui_click_captcha()
+            print("💥 交互指令已发送，静候 10 秒等待绿勾...")
+            sb.sleep(10)
         except Exception as e:
-            print(f"❌ 坐标打击失败: {e}")
+            print(f"❌ 内置点击模块发生异常: {e}")
+            
     else:
-        print("⚠️ 未发现续期按钮，可能已在冷却中")
+        print("⚠️ 未发现续期按钮，可能已在冷却中。")
 
+    # 截图撤退
     final_img = f"{email}_status.png"
+    print(f"📸 任务流程结束，正在截图保存为 {final_img}")
     sb.save_screenshot(final_img)
     send_tg_photo(f"✅ 账号执行完毕: {email}", final_img)
+    
     return True
 
 def main():
