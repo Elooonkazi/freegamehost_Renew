@@ -83,6 +83,8 @@ jobs:
       - name: 🚀 执行续期脚本
         shell: bash
         env:
+          PYTHONIOENCODING: utf-8
+          PYTHONUTF8: "1"  # 👈 强制开启 Python 的全 UTF-8 模式
           FGH_ACCOUNT: ${{ secrets.FGH_ACCOUNT }}
           TG_BOT: ${{ secrets.TG_BOT }}
         run: |
