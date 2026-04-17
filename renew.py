@@ -47,7 +47,10 @@ def inject_cookies(sb):
             print(f"⚠️ Cookie 注入失败: {c['name']} -> {e}")
 
 def execute_renewal(sb, email):
-    print(f"✈️ 正在空降目标服务器...")
+    # 强制修正账号显示为 My renqi
+    display_name = email if email and email != 'unknown' else 'My renqi'
+    print(f"✈️ 正在空降目标服务器 (账号: {display_name})...")
+    
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 15)
     sb.sleep(8)
 
@@ -55,14 +58,12 @@ def execute_renewal(sb, email):
         print("❌ 身份失效，未能进入管理面板")
         return False
 
-    # 【核心修复 1】核弹级清理：直接将 DOM 树里的广告节点连根拔起
+    # 1. 核弹级清场（保留这个成功经验）
     print("🧹 正在清理页面广告与遮挡物...")
     sb.execute_script("""
-        // 删掉所有非 Cloudflare 的 iframe (通常是第三方广告)
         document.querySelectorAll('iframe').forEach(f => {
             if(f.src && !f.src.includes('cloudflare')) f.remove(); 
         });
-        // 删掉所有带有特定广告文本的区块
         document.querySelectorAll('div, a, span').forEach(el => { 
             let txt = (el.innerText || '').toUpperCase();
             if(txt.includes('DOWNLOAD EXTENSION') || txt.includes('2 EASY STEPS') || txt.includes('ADVERTISEMENT')) {
@@ -71,6 +72,7 @@ def execute_renewal(sb, email):
         });
     """)
 
+    # 2. 锁定续期按钮
     print("🎯 锁定续期按钮...")
     button_clicked = sb.execute_script("""
         var els = document.querySelectorAll('button, a, div[role="button"]');
@@ -89,24 +91,40 @@ def execute_renewal(sb, email):
         print("✅ 按钮已点击，等待 CF 验证框展开...")
         sb.sleep(6)
         
-        # 【核心修复 2】放弃手动算坐标，使用 SeleniumBase 专用的 Turnstile 击杀方法
-        print("🛡️ 呼叫 SeleniumBase 内置反人机装甲 (uc_gui_click_captcha)...")
+        # 3. 终极穿甲弹：基于内部坐标的精准打击
+        print("🛡️ 正在执行内部坐标精准打击...")
         try:
-            # 这个内置方法会自动寻找 CF iframe，自动计算偏移量，并模拟拟人化点击
-            sb.uc_gui_click_captcha()
-            print("💥 交互指令已发送，静候 10 秒等待绿勾...")
-            sb.sleep(10)
+            # 精准定位 CF iframe
+            cf_iframe = sb.driver.find_element("xpath", "//iframe[contains(@src, 'cloudflare') or contains(@src, 'turnstile')]")
+            if cf_iframe:
+                # 强制居中
+                sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", cf_iframe)
+                sb.sleep(2)
+                
+                # 获取尺寸并计算往左侧偏移的量（复选框通常在左侧 35% 的位置）
+                w = cf_iframe.size.get('width', 300)
+                offset_x = -int(w * 0.35)
+                
+                # 唤醒内部坐标打击模块
+                from selenium.webdriver.common.action_chains import ActionChains
+                actions = ActionChains(sb.driver)
+                actions.move_to_element(cf_iframe).move_by_offset(offset_x, 0).click().perform()
+                
+                print(f"💥 坐标穿甲弹已击发 (偏移量 {offset_x})，静候 10 秒等待绿勾...")
+                sb.sleep(10)
+            else:
+                print("❌ 未能在页面中找到 CF 验证框元素。")
         except Exception as e:
-            print(f"❌ 内置点击模块发生异常: {e}")
+            print(f"❌ 坐标打击发生异常: {e}")
             
     else:
         print("⚠️ 未发现续期按钮，可能已在冷却中。")
 
     # 截图撤退
-    final_img = f"{email}_status.png"
+    final_img = f"{display_name}_status.png"
     print(f"📸 任务流程结束，正在截图保存为 {final_img}")
     sb.save_screenshot(final_img)
-    send_tg_photo(f"✅ 账号执行完毕: {email}", final_img)
+    send_tg_photo(f"✅ 账号执行完毕: {display_name}", final_img)
     
     return True
 
