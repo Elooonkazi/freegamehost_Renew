@@ -121,8 +121,9 @@ def main():
         email = acc.get('email', 'unknown')
         print(f"\n--- 处理账号: {email} ---")
         with SB(uc=True, headless=False, agent=MY_USER_AGENT) as sb:
-            sb.driver.set_window_size(1920, 1080)
-            sb.uc_open_with_tab("about:blank")
+            # 强制最大化窗口，确保 PyAutoGUI 的绝对坐标计算不会因为窗口缩放而打偏
+            sb.driver.maximize_window()
+            sb.uc_open_with_tab("about:blank") 
             inject_cookies(sb)
             execute_renewal(sb, email)
             time.sleep(5)
