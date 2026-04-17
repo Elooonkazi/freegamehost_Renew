@@ -1,13 +1,12 @@
 import os
 import json
 import time
+import re
 import requests
 from seleniumbase import SB
-from selenium.webdriver.common.action_chains import ActionChains
 
 # ================= 🚨 配置区 🚨 =================
 
-# 1. 浏览器指纹与 Cookie (建议定期更新)
 MY_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
 
 MY_COOKIES = [
@@ -17,23 +16,19 @@ MY_COOKIES = [
     {"name": "remember_web_59ba36addc2b2f9401580f014c7f58ea4e30989d", "value": "eyJpdiI6IlFsaVROSllyc0d4UGtXZlN3b1BWNVE9PSIsInZhbHVlIjoiMlNuNHd5UVJGdFdYYjFaMnZxYWZZcklOVi81ai9nNTNmQTlPdFlUTSsrODRlQkFGVzlRMGg3aE9mcTU3T0djNWhnWjhOOHdQVDVTOXB0LzFhK0E5S3RLTDNIbzN2WTlFU1VnZmJSMWQzSGU3dHhyNVJmczBWQUtxQnQ5bjU1Y3dBRlF5R3Q1eWpiUGVmK0dWZytPeUR1d2VtZk9aTFNmVGQwZVRjNFhiTVB5T29MOWpOR2h4dzRncHZwVS9oazJVanZjUld1cllscjVwMThJSm92YnV1a2VOTllpSU10amdhWW1BbVgwVkY3WT0iLCJtYWMiOiJjOTliNTYwYjE1MmI0NDFhYmRiMTIyZWJiMjYzYzVjYTVjNTdkNzMyNDk1NzViMmRjMWE4ZDUxZDhhNTA2ZjkxIiwidGFnIjoiIn0%3D"}
 ]
 
-# 2. 基础配置
 FGH_ACCOUNT_ENV = os.environ.get('FGH_ACCOUNT', '[]')
 TG_BOT_ENV = os.environ.get('TG_BOT', '')
 TARGET_SERVER_URL = "https://panel.freegamehost.xyz/server/41ed8b6e"
+ALERT_THRESHOLD_MINUTES = 180  # 剩余时间低于 3 小时则告警
 
-def send_tg_photo(msg, photo_path=None):
+def send_tg_msg(msg):
     if not TG_BOT_ENV: return
     try:
         chat_id, bot_token = TG_BOT_ENV.split(':', 1)
-        if photo_path and os.path.exists(photo_path):
-            url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
-            with open(photo_path, 'rb') as f:
-                requests.post(url, data={"chat_id": chat_id, "caption": msg}, files={"photo": f})
-        else:
-            url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-            requests.post(url, json={"chat_id": chat_id, "text": msg})
-    except: pass
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        requests.post(url, json={"chat_id": chat_id, "text": msg, "disable_web_page_preview": True})
+    except Exception as e:
+        print(f"Telegram 推送失败: {e}")
 
 def inject_cookies(sb):
     print("🚀 正在注入身份 Cookie...")
@@ -44,114 +39,63 @@ def inject_cookies(sb):
                 'domain': 'panel.freegamehost.xyz', 'path': '/', 'secure': True
             })
         except Exception as e:
-            print(f"⚠️ Cookie 注入失败: {c['name']} -> {e}")
+            pass
 
-def execute_renewal(sb, username):
-    print(f"✈️ 正在空降目标服务器...")
-    
+def check_server_status(sb, username):
+    print(f"✈️ 正在空降目标服务器 (账号: {username})...")
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 15)
     sb.sleep(8)
 
     if "login" in sb.get_current_url().lower():
-        print("❌ 身份失效，未能进入管理面板")
+        error_msg = f"❌ [监控告警] 账号 {username} 身份已失效，请更新 Cookie！"
+        print(error_msg)
+        send_tg_msg(error_msg)
         return False
 
-    # 1. 核弹级清场（深度过滤，防止误删 CF）
-    print("🧹 正在清理页面广告与遮挡物...")
-    sb.execute_script("""
-        document.querySelectorAll('iframe').forEach(f => {
-            let srcStr = (f.src || '').toLowerCase();
-            if(srcStr && !srcStr.includes('cloudflare') && !srcStr.includes('turnstile')) {
-                f.remove(); 
-            }
-        });
-        document.querySelectorAll('div, a, span').forEach(el => { 
-            let txt = (el.innerText || '').toUpperCase();
-            if(txt.includes('DOWNLOAD EXTENSION') || txt.includes('2 EASY STEPS') || txt.includes('ADVERTISEMENT')) {
-                el.remove(); 
-            }
-        });
-    """)
-
-    # 2. 锁定续期按钮
-    print("🎯 锁定续期按钮...")
-    button_clicked = sb.execute_script("""
-        var els = document.querySelectorAll('button, a, div[role="button"]');
-        for (var i = 0; i < els.length; i++) {
-            var txt = els[i].innerText.toUpperCase();
-            if ((txt.includes('HOURS') || txt.includes('RENEW')) && !txt.includes('DELETE')) {
-                els[i].scrollIntoView({block: "center"});
-                els[i].click();
-                return true;
-            }
-        }
-        return false;
-    """)
-
-    if button_clicked:
-        print("✅ 按钮已点击，等待 CF 验证框展开...")
-        sb.sleep(6)
-        
-        # 3. 终极穿甲弹：无视 visibility 判定，直接找实体
-        print("🛡️ 正在执行内部坐标精准打击...")
-        try:
-            cf_iframe = None
-            iframes = sb.driver.find_elements("tag name", "iframe")
-            
-            # 只要宽度大于 100 像素，就默认它是存活的验证框
-            for f in iframes:
-                if f.size.get('width', 0) > 100:
-                    cf_iframe = f
-                    break
-            
-            if cf_iframe:
-                print("🎯 成功锁定验证框实体！准备击发...")
-                sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", cf_iframe)
-                sb.sleep(2)
-                
-                # 获取尺寸并计算往左侧偏移的量（复选框在左侧 35% 的位置）
-                w = cf_iframe.size.get('width', 300)
-                offset_x = -int(w * 0.35)
-                
-                actions = ActionChains(sb.driver)
-                actions.move_to_element(cf_iframe).move_by_offset(offset_x, 0).click().perform()
-                
-                print(f"💥 坐标穿甲弹已击发 (偏移量 {offset_x})，静候 10 秒等待绿勾...")
-                sb.sleep(10)
-            else:
-                print("❌ 未能在页面中找到任何足够宽度的 iframe。")
-        except Exception as e:
-            print(f"❌ 坐标打击发生异常: {e}")
-            
-    else:
-        print("⚠️ 未发现续期按钮，可能已在冷却中。")
-
-    # 截图撤退
-    final_img = f"{username}_status.png"
-    print(f"📸 任务流程结束，正在截图保存为 {final_img}")
-    sb.save_screenshot(final_img)
-    send_tg_photo(f"✅ 账号执行完毕: {username}", final_img)
+    print("🔍 正在扫描剩余时间...")
+    html = sb.get_page_source()
     
+    # 使用正则暴力提取倒计时 (HH:MM:SS)
+    time_match = re.search(r'(\d{2}):(\d{2}):(\d{2})', html)
+    
+    if time_match:
+        h, m, s = map(int, time_match.groups())
+        total_minutes = h * 60 + m
+        print(f"✅ 当前剩余时间: {h}小时 {m}分钟")
+        
+        if total_minutes < ALERT_THRESHOLD_MINUTES:
+            alert_msg = (
+                f"🚨 你的免费服务器快到期了！\n\n"
+                f"👤 账号：{username}\n"
+                f"⏳ 剩余：{h}小时 {m}分钟\n\n"
+                f"👉 立即点击下方链接手动续期：\n"
+                f"{TARGET_SERVER_URL}"
+            )
+            send_tg_msg(alert_msg)
+            print("📩 阈值触发，告警消息已发送至 Telegram！")
+        else:
+            print("🟢 剩余时间充足，继续潜水。")
+    else:
+        print("⚠️ 未能在页面中匹配到倒计时，请检查面板布局是否改变。")
+        
     return True
 
 def main():
     try:
         accounts = json.loads(FGH_ACCOUNT_ENV)
     except:
-        print("❌ 账户数据解析失败")
+        print("❌ 账户数据解析失败，请检查 Secrets")
         return
 
     for acc in accounts:
-        # 提取 username，默认兜底防止报错
         username = acc.get('username', 'My renqi')
-        print(f"\n--- 处理账号: {username} ---")
+        print(f"\n--- 监控进程启动: {username} ---")
         
-        with SB(uc=True, headless=False, agent=MY_USER_AGENT) as sb:
-            sb.driver.maximize_window()
+        # 监控探针不需要真实 UI，使用 Headless 模式更轻量快速
+        with SB(uc=True, headless=True, agent=MY_USER_AGENT) as sb:
             sb.uc_open_with_tab("about:blank") 
             inject_cookies(sb)
-            execute_renewal(sb, username)
-            time.sleep(5)
+            check_server_status(sb, username)
 
 if __name__ == "__main__":
     main()
