@@ -46,10 +46,8 @@ def inject_cookies(sb):
         except Exception as e:
             print(f"⚠️ Cookie 注入失败: {c['name']} -> {e}")
 
-def execute_renewal(sb, email):
-    # 强制修正账号显示为 My renqi
-    display_name = email if email and email != 'unknown' else 'My renqi'
-    print(f"✈️ 正在空降目标服务器 (账号: {display_name})...")
+def execute_renewal(sb, username):
+    print(f"✈️ 正在空降目标服务器...")
     
     sb.uc_open_with_reconnect(TARGET_SERVER_URL, 15)
     sb.sleep(8)
@@ -58,11 +56,14 @@ def execute_renewal(sb, email):
         print("❌ 身份失效，未能进入管理面板")
         return False
 
-    # 1. 核弹级清场（保留这个成功经验）
+    # 1. 核弹级清场（深度过滤，防止误删 CF）
     print("🧹 正在清理页面广告与遮挡物...")
     sb.execute_script("""
         document.querySelectorAll('iframe').forEach(f => {
-            if(f.src && !f.src.includes('cloudflare')) f.remove(); 
+            let srcStr = (f.src || '').toLowerCase();
+            if(srcStr && !srcStr.includes('cloudflare') && !srcStr.includes('turnstile')) {
+                f.remove(); 
+            }
         });
         document.querySelectorAll('div, a, span').forEach(el => { 
             let txt = (el.innerText || '').toUpperCase();
@@ -91,38 +92,34 @@ def execute_renewal(sb, email):
         print("✅ 按钮已点击，等待 CF 验证框展开...")
         sb.sleep(6)
         
-        # 3. 终极穿甲弹：基于内部坐标的精准打击
+        # 3. 终极穿甲弹：无视 visibility 判定，直接找实体
         print("🛡️ 正在执行内部坐标精准打击...")
         try:
             cf_iframe = None
-            # 放弃正则匹配，直接全屏扫描所有 iframe
             iframes = sb.driver.find_elements("tag name", "iframe")
             
-            # 找出那个可见的、且有一定体积的正牌验证框（因为广告全被清了，剩下的必定是它）
+            # 只要宽度大于 100 像素，就默认它是存活的验证框
             for f in iframes:
-                if f.is_displayed() and f.size.get('width', 0) > 150:
+                if f.size.get('width', 0) > 100:
                     cf_iframe = f
                     break
             
             if cf_iframe:
                 print("🎯 成功锁定验证框实体！准备击发...")
-                # 强制居中
                 sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", cf_iframe)
                 sb.sleep(2)
                 
-                # 获取尺寸并计算往左侧偏移的量（复选框通常在左侧 35% 的位置）
+                # 获取尺寸并计算往左侧偏移的量（复选框在左侧 35% 的位置）
                 w = cf_iframe.size.get('width', 300)
                 offset_x = -int(w * 0.35)
                 
-                # 唤醒内部坐标打击模块
-                from selenium.webdriver.common.action_chains import ActionChains
                 actions = ActionChains(sb.driver)
                 actions.move_to_element(cf_iframe).move_by_offset(offset_x, 0).click().perform()
                 
                 print(f"💥 坐标穿甲弹已击发 (偏移量 {offset_x})，静候 10 秒等待绿勾...")
                 sb.sleep(10)
             else:
-                print("❌ 未能在页面中找到任何可见的验证框。")
+                print("❌ 未能在页面中找到任何足够宽度的 iframe。")
         except Exception as e:
             print(f"❌ 坐标打击发生异常: {e}")
             
@@ -130,10 +127,10 @@ def execute_renewal(sb, email):
         print("⚠️ 未发现续期按钮，可能已在冷却中。")
 
     # 截图撤退
-    final_img = f"{display_name}_status.png"
+    final_img = f"{username}_status.png"
     print(f"📸 任务流程结束，正在截图保存为 {final_img}")
     sb.save_screenshot(final_img)
-    send_tg_photo(f"✅ 账号执行完毕: {display_name}", final_img)
+    send_tg_photo(f"✅ 账号执行完毕: {username}", final_img)
     
     return True
 
@@ -145,14 +142,15 @@ def main():
         return
 
     for acc in accounts:
-        email = acc.get('email', 'unknown')
-        print(f"\n--- 处理账号: {email} ---")
+        # 提取 username，默认兜底防止报错
+        username = acc.get('username', 'My renqi')
+        print(f"\n--- 处理账号: {username} ---")
+        
         with SB(uc=True, headless=False, agent=MY_USER_AGENT) as sb:
-            # 强制最大化窗口，确保 PyAutoGUI 的绝对坐标计算不会因为窗口缩放而打偏
             sb.driver.maximize_window()
             sb.uc_open_with_tab("about:blank") 
             inject_cookies(sb)
-            execute_renewal(sb, email)
+            execute_renewal(sb, username)
             time.sleep(5)
 
 if __name__ == "__main__":
