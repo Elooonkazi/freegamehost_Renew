@@ -120,7 +120,7 @@ def main():
     for acc in accounts:
         email = acc.get('email', 'unknown')
         print(f"\n--- 处理账号: {email} ---")
-        with SB(uc=True, headless=True, agent=MY_USER_AGENT) as sb:
+        with SB(uc=True, headless=False, agent=MY_USER_AGENT) as sb:
             sb.driver.set_window_size(1920, 1080)
             sb.uc_open_with_tab("about:blank")
             inject_cookies(sb)
