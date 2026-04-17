@@ -19,14 +19,21 @@ MY_COOKIES = [
 FGH_ACCOUNT_ENV = os.environ.get('FGH_ACCOUNT', '[]')
 TG_BOT_ENV = os.environ.get('TG_BOT', '')
 TARGET_SERVER_URL = "https://panel.freegamehost.xyz/server/41ed8b6e"
-ALERT_THRESHOLD_MINUTES = 180  # 剩余时间低于 3 小时则告警
 
-def send_tg_msg(msg):
+# 设定告警阈值：低于此时间（分钟）将发送 TG 截图告警（目前设为 3 小时 = 180 分钟）
+ALERT_THRESHOLD_MINUTES = 180  
+
+def send_tg_photo(msg, photo_path=None):
     if not TG_BOT_ENV: return
     try:
         chat_id, bot_token = TG_BOT_ENV.split(':', 1)
-        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-        requests.post(url, json={"chat_id": chat_id, "text": msg, "disable_web_page_preview": True})
+        if photo_path and os.path.exists(photo_path):
+            url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+            with open(photo_path, 'rb') as f:
+                requests.post(url, data={"chat_id": chat_id, "caption": msg}, files={"photo": f})
+        else:
+            url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+            requests.post(url, json={"chat_id": chat_id, "text": msg})
     except Exception as e:
         print(f"Telegram 推送失败: {e}")
 
@@ -38,7 +45,7 @@ def inject_cookies(sb):
                 'name': c['name'], 'value': c['value'],
                 'domain': 'panel.freegamehost.xyz', 'path': '/', 'secure': True
             })
-        except Exception as e:
+        except:
             pass
 
 def check_server_status(sb, username):
@@ -49,34 +56,47 @@ def check_server_status(sb, username):
     if "login" in sb.get_current_url().lower():
         error_msg = f"❌ [监控告警] 账号 {username} 身份已失效，请更新 Cookie！"
         print(error_msg)
-        send_tg_msg(error_msg)
+        send_tg_photo(error_msg)
         return False
 
     print("🔍 正在扫描剩余时间...")
-    html = sb.get_page_source()
+    # 获取页面上纯文本内容，避免被隐藏的 HTML 标签干扰
+    page_text = sb.get_text("body")
     
-    # 使用正则暴力提取倒计时 (HH:MM:SS)
-    time_match = re.search(r'(\d{2}):(\d{2}):(\d{2})', html)
+    # 终极防误伤正则：必须是 00:00:00 格式，且后面紧跟着 HH : MM : SS 或其变体
+    time_match = re.search(r'(\d{2}):(\d{2}):(\d{2})\s*(?i)HH\s*:\s*MM\s*:\s*SS', page_text)
     
+    # 如果上面的没匹配到，试试找 "TIME REMAINING" 后面的时间
+    if not time_match:
+        time_match = re.search(r'(?i)TIME REMAINING\s*(\d{2}):(\d{2}):(\d{2})', page_text)
+
     if time_match:
         h, m, s = map(int, time_match.groups())
         total_minutes = h * 60 + m
-        print(f"✅ 当前剩余时间: {h}小时 {m}分钟")
+        print(f"✅ 当前真实剩余时间: {h}小时 {m}分钟")
         
         if total_minutes < ALERT_THRESHOLD_MINUTES:
+            # 触发告警：截图并发送
+            screenshot_path = f"{username}_alert.png"
+            sb.save_screenshot(screenshot_path)
+            
             alert_msg = (
                 f"🚨 你的免费服务器快到期了！\n\n"
                 f"👤 账号：{username}\n"
-                f"⏳ 剩余：{h}小时 {m}分钟\n\n"
+                f"⏳ 真实剩余：{h}小时 {m}分钟\n\n"
                 f"👉 立即点击下方链接手动续期：\n"
                 f"{TARGET_SERVER_URL}"
             )
-            send_tg_msg(alert_msg)
-            print("📩 阈值触发，告警消息已发送至 Telegram！")
+            send_tg_photo(alert_msg, screenshot_path)
+            print("📸 阈值触发，已截图并发送 TG 告警！")
         else:
             print("🟢 剩余时间充足，继续潜水。")
     else:
-        print("⚠️ 未能在页面中匹配到倒计时，请检查面板布局是否改变。")
+        print("⚠️ 未能在页面中精准匹配到倒计时面板，可能布局已更新。")
+        # 如果找不到时间，也发个截图告警，方便排查
+        fail_path = f"{username}_fail.png"
+        sb.save_screenshot(fail_path)
+        send_tg_photo(f"⚠️ [监控异常] 账号 {username} 未找到倒计时，请查看截图确认状态。", fail_path)
         
     return True
 
@@ -91,8 +111,10 @@ def main():
         username = acc.get('username', 'My renqi')
         print(f"\n--- 监控进程启动: {username} ---")
         
-        # 监控探针不需要真实 UI，使用 Headless 模式更轻量快速
+        # 监控脚本推荐使用 headless=True（无头模式），因为不需要真实鼠标点击，跑得更快且节省 GitHub 资源
         with SB(uc=True, headless=True, agent=MY_USER_AGENT) as sb:
+            # 设置一个标准的 1080p 窗口，保证截图清晰好看
+            sb.driver.set_window_size(1920, 1080)
             sb.uc_open_with_tab("about:blank") 
             inject_cookies(sb)
             check_server_status(sb, username)
