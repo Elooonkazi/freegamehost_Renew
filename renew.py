@@ -94,9 +94,18 @@ def execute_renewal(sb, email):
         # 3. 终极穿甲弹：基于内部坐标的精准打击
         print("🛡️ 正在执行内部坐标精准打击...")
         try:
-            # 精准定位 CF iframe
-            cf_iframe = sb.driver.find_element("xpath", "//iframe[contains(@src, 'cloudflare') or contains(@src, 'turnstile')]")
+            cf_iframe = None
+            # 放弃正则匹配，直接全屏扫描所有 iframe
+            iframes = sb.driver.find_elements("tag name", "iframe")
+            
+            # 找出那个可见的、且有一定体积的正牌验证框（因为广告全被清了，剩下的必定是它）
+            for f in iframes:
+                if f.is_displayed() and f.size.get('width', 0) > 150:
+                    cf_iframe = f
+                    break
+            
             if cf_iframe:
+                print("🎯 成功锁定验证框实体！准备击发...")
                 # 强制居中
                 sb.execute_script("arguments[0].scrollIntoView({block: 'center'});", cf_iframe)
                 sb.sleep(2)
@@ -113,7 +122,7 @@ def execute_renewal(sb, email):
                 print(f"💥 坐标穿甲弹已击发 (偏移量 {offset_x})，静候 10 秒等待绿勾...")
                 sb.sleep(10)
             else:
-                print("❌ 未能在页面中找到 CF 验证框元素。")
+                print("❌ 未能在页面中找到任何可见的验证框。")
         except Exception as e:
             print(f"❌ 坐标打击发生异常: {e}")
             
